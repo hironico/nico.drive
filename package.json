@@ -10,7 +10,8 @@
     "author": "hironico.com",
     "scripts": {
         "test": "node test/test_server.js",
-        "mocha": "find ./test/postgre -name '*.js' | xargs mocha"
+        "mocha": "find ./test/postgre -name '*.js' | xargs mocha",
+        "start": "node nicodriveserver.js"
     },
     "main": "lib/jsdav",
     "repository": {
