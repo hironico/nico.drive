@@ -7,14 +7,16 @@
  */
 "use strict";
 
-var jsDAV = require("./../lib/jsdav");
+var jsDAV = require("./lib/jsdav");
 jsDAV.debugMode = true;
 
-var jsDAV_Locks_Backend_FS = require("./../lib/DAV/plugins/locks/fs");
-var jsDAV_Auth_Backend_File = require("./../lib/DAV/plugins/auth/file");
+var jsDAV_Locks_Backend_FS = require("./lib/DAV/plugins/locks/fs");
+var jsDAV_Auth_Backend_File = require("./lib/DAV/plugins/auth/file");
 
-var Util = require('./../lib/shared/util');
+var Util = require('./lib/shared/util');
 var Process = require('process');
+
+var Config = require('nicodriveconfig');
 
 Util.log('Platform is: ' + Process.platform + ' ' + Process.arch);
 
@@ -29,8 +31,8 @@ perl -i -pe "chomp if eof" ./myhtdigest
 */
 
 jsDAV.createServer({
-    node: __dirname + "/../test/assets",
-    locksBackend: jsDAV_Locks_Backend_FS.new(__dirname + "/../test/assets"),
-    authBackend:  jsDAV_Auth_Backend_File.new(__dirname + "/myhtdigest"),
-    realm: "jsdavtest"
+    node: Config.rootDir,
+    locksBackend: jsDAV_Locks_Backend_FS.new(Config.locksDir),
+    authBackend:  jsDAV_Auth_Backend_File.new(Config.auth.digestFile),
+    realm: Config.auth.realm
 }, 8000);
