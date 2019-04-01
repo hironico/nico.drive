@@ -16,7 +16,7 @@ var jsDAV_Auth_Backend_File = require("./lib/DAV/plugins/auth/file");
 var Util = require('./lib/shared/util');
 var Process = require('process');
 
-var Config = require('nicodriveconfig');
+var Config = require('./nicodriveconfig');
 
 Util.log('Platform is: ' + Process.platform + ' ' + Process.arch);
 
