@@ -1,13 +1,13 @@
 {
-    "name": "jsDAV",
-    "description": "jsDAV allows you to easily add WebDAV support to a NodeJS application. jsDAV is meant to cover the entire standard, and attempts to allow integration using an easy to understand API.",
-    "version": "0.3.4",
+    "name": "nicodrive",
+    "description": "Based on jsDAV, nicodrive is a lightweight webdav backup solution. See http://github.com/mikedeboer/jsDAV.",
+    "version": "6.0.0",
     "license": "MIT",
-    "homepage": "http://github.com/mikedeboer/jsDAV",
+    "homepage": "https://hironico.visualstudio.com/nico.drive",
     "engines": {
         "node": ">= 0.6.0"
     },
-    "author": "Mike de Boer <info@mikedeboer.nl>",
+    "author": "hironico.com",
     "scripts": {
         "test": "node test/test_server.js",
         "mocha": "find ./test/postgre -name '*.js' | xargs mocha"
@@ -15,9 +15,8 @@
     "main": "lib/jsdav",
     "repository": {
         "type": "git",
-        "url": "http://github.com/mikedeboer/jsDAV.git"
+        "url": "https://hironico.visualstudio.com/DefaultCollection/nico.drive/_git/nico.drive"
     },
-    "preferGlobal": true,
     "dependencies": {
         "asyncjs": "0.0.10",
         "formidable": "1.2.0",
