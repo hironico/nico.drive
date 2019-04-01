@@ -30,9 +30,15 @@ htdigest -c ./myhtdigest jsdavtest mylogin
 perl -i -pe "chomp if eof" ./myhtdigest
 */
 
+Util.log('Configuration:\n' + JSON.stringify(Config, null, 4));
+
+
 jsDAV.createServer({
     node: Config.rootDir,
     locksBackend: jsDAV_Locks_Backend_FS.new(Config.locksDir),
     authBackend:  jsDAV_Auth_Backend_File.new(Config.auth.digestFile),
-    realm: Config.auth.realm
+    realm: Config.auth.realm,
+
+    key: fs.readFileSync(Config.ssl.keyFile),
+    cert: fs.readFileSync(Config.ssl.certFile)
 }, 8000);

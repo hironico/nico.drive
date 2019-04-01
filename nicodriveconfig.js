@@ -4,5 +4,9 @@ var nicodriveconfig = module.exports = {
     auth: {
         digestFile: "./htdigest",
         realm: "synobackup"
+    },
+    ssl: {
+        keyFile: './ssl/server.key',
+        certFile: './ssl/server.crt'
     }
 };
