@@ -49,10 +49,10 @@ Object.keys(ifaces).forEach(function (ifname) {
 
     if (alias >= 1) {
       // this single interface has multiple ipv4 addresses
-      console.log(ifname + ':' + alias, iface.address);
+      Util.log(ifname + ':' + alias, iface.address);
     } else {
       // this interface has only one ipv4 adress
-      console.log(ifname, iface.address);
+      Util.log(ifname, iface.address);
       ipToUse = iface.address;
     }
     ++alias;
