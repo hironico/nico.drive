@@ -32,6 +32,34 @@ htdigest -c ./myhtdigest jsdavtest mylogin
 perl -i -pe "chomp if eof" ./myhtdigest
 */
 
+
+var os = require('os');
+var ifaces = os.networkInterfaces();
+
+var ipToUse = null;
+
+Object.keys(ifaces).forEach(function (ifname) {
+  var alias = 0;
+
+  ifaces[ifname].forEach(function (iface) {
+    if ('IPv4' !== iface.family || iface.internal !== false) {
+      // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+      return;
+    }
+
+    if (alias >= 1) {
+      // this single interface has multiple ipv4 addresses
+      console.log(ifname + ':' + alias, iface.address);
+    } else {
+      // this interface has only one ipv4 adress
+      console.log(ifname, iface.address);
+      ipToUse = iface.address;
+    }
+    ++alias;
+  });
+});
+
+
 Util.log('Configuration:\n' + JSON.stringify(Config, null, 4));
 
 
@@ -43,4 +71,4 @@ jsDAV.createServer({
 
     key: fs.readFileSync(Config.ssl.keyFile),
     cert: fs.readFileSync(Config.ssl.certFile)
-}, 5000, "localhost");
+}, 5000, "" + ipToUse);
