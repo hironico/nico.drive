@@ -8,7 +8,7 @@
 "use strict";
 
 var jsDAV = require("./lib/jsdav");
-jsDAV.debugMode = true;
+jsDAV.debugMode = false;
 
 var jsDAV_Locks_Backend_FS = require("./lib/DAV/plugins/locks/fs");
 var jsDAV_Auth_Backend_File = require("./lib/DAV/plugins/auth/file");
