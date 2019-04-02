@@ -14,7 +14,9 @@ var jsDAV_Locks_Backend_FS = require("./lib/DAV/plugins/locks/fs");
 var jsDAV_Auth_Backend_File = require("./lib/DAV/plugins/auth/file");
 
 var Util = require('./lib/shared/util');
+
 var Process = require('process');
+var fs = require('fs');
 
 var Config = require('./nicodriveconfig');
 
