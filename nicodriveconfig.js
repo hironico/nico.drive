@@ -8,5 +8,8 @@ var nicodriveconfig = module.exports = {
     ssl: {
         keyFile: './ssl/server.key',
         certFile: './ssl/server.crt'
+    },
+    frontend: {
+        port: 5500
     }
 };

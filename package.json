@@ -20,6 +20,7 @@
     },
     "dependencies": {
         "asyncjs": "0.0.10",
+        "express": "^4.16.4",
         "formidable": "1.2.0",
         "moment": "2.11.1",
         "xmldom": "0.1.21",
