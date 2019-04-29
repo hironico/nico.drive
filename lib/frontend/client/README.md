@@ -79,6 +79,9 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/tr
 - cool progress bar:
 https://progressbarjs.readthedocs.io/en/latest/
 
+- cool md5 implementation
+https://www.npmjs.com/package/blueimp-md5)
+
 ### Design sources
 
 - https://dribbble.com/aaroniker : upload design inspiration
