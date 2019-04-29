@@ -82,7 +82,8 @@
   margin-bottom: 15px;
 }
 
-.navbar .bg-dark {
-  background-color: rgb(39,46,64);
+.file-upload-progress-icons {
+  float: right;
+  font-size: small;
 }
 
