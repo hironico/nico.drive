@@ -1,8 +1,8 @@
 var nicodriveconfig = module.exports = {
-    rootDir: "/data/synobackup/files",
-    locksdir: "/data/synobackup/files",
+    rootDir: "./data",
+    locksdir: "./data",
     auth: {
-        digestFile: "./htdigest",
+        digestFile: "htdigest",
         realm: "synobackup"
     },
     ssl: {

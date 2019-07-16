@@ -33,11 +33,11 @@ perl -i -pe "chomp if eof" ./myhtdigest
 */
 
 Util.log('Configuration:\n' + JSON.stringify(Config, null, 4));
-
+Util.log('Using htdigest file as: ' + process.cwd() + '/' + Config.auth.digestFile);
 jsDAV.createServer({
     node: Config.rootDir,
     locksBackend: jsDAV_Locks_Backend_FS.new(Config.locksDir),
-    authBackend:  jsDAV_Auth_Backend_File.new(Config.auth.digestFile),
+    authBackend:  jsDAV_Auth_Backend_File.new(process.cwd() + '/' + Config.auth.digestFile),
     realm: Config.auth.realm
 }, 5000);
 
