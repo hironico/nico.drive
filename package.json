@@ -23,7 +23,7 @@
         "cookie-parser": "^1.4.4",
         "express": "^4.17.0",
         "formidable": "1.2.0",
-        "moment": "2.11.1",
+        "moment": "^2.24.0",
         "morgan": "^1.9.1",
         "xmldom": "0.1.21",
         "xpath": "0.0.21"
