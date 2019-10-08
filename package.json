@@ -11,7 +11,8 @@
     "scripts": {
         "test": "node test/test_server.js",
         "mocha": "find ./test/postgre -name '*.js' | xargs mocha",
-        "start": "node nicodriveserver.js"
+        "start": "node nicodriveserver.js",
+        "debug": "nodemon --inspect nicodriveserver.js"
     },
     "main": "lib/jsdav",
     "repository": {
@@ -25,6 +26,7 @@
         "formidable": "1.2.0",
         "moment": "^2.24.0",
         "morgan": "^1.9.1",
+        "nodemon": "^1.19.3",
         "xmldom": "0.1.21",
         "xpath": "0.0.21"
     },

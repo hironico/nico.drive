@@ -1,5 +1,5 @@
 var nicodriveconfig = module.exports = {
-    rootDir: "./data",
+    rootDir: "/home/hironico/source/nico.drive/data",
     locksdir: "./data",
     auth: {
         digestFile: "htdigest",

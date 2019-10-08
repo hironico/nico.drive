@@ -18,7 +18,7 @@ var Util = require('./lib/shared/util');
 var Process = require('process');
 var fs = require('fs');
 
-var Config = require('./nicodriveconfig');
+global.NicoDriveConfig = require('./nicodriveconfig');
 
 Util.log('Platform is: ' + Process.platform + ' ' + Process.arch);
 
@@ -32,15 +32,15 @@ htdigest -c ./myhtdigest jsdavtest mylogin
 perl -i -pe "chomp if eof" ./myhtdigest
 */
 
-Util.log('Configuration:\n' + JSON.stringify(Config, null, 4));
-Util.log('Using htdigest file as: ' + process.cwd() + '/' + Config.auth.digestFile);
+Util.log('Configuration:\n' + JSON.stringify(NicoDriveConfig, null, 4));
+Util.log('Using htdigest file as: ' + process.cwd() + '/' + NicoDriveConfig.auth.digestFile);
 jsDAV.createServer({
-    node: Config.rootDir,
-    locksBackend: jsDAV_Locks_Backend_FS.new(Config.locksDir),
-    authBackend:  jsDAV_Auth_Backend_File.new(process.cwd() + '/' + Config.auth.digestFile),
-    realm: Config.auth.realm
+    node: NicoDriveConfig.rootDir,
+    locksBackend: jsDAV_Locks_Backend_FS.new(NicoDriveConfig.locksDir),
+    authBackend:  jsDAV_Auth_Backend_File.new(process.cwd() + '/' + NicoDriveConfig.auth.digestFile),
+    realm: NicoDriveConfig.auth.realm
 }, 5000);
 
-const frontendPort = Config.frontend.port;
+const frontendPort = NicoDriveConfig.frontend.port;
 var frontend = require('./lib/frontend/frontend-server');
 frontend.listen(frontendPort, () => console.log(`Frontend app listening on port ${frontendPort}!`))
