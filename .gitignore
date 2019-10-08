@@ -13,3 +13,5 @@ test/credentials.js
 npm-debug.log
 node_modules/*
 test/assets/litmus*
+
+data/
