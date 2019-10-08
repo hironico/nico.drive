@@ -9,7 +9,14 @@
             "request": "launch",
             "name": "NicoDrive Server",
             "program": "${workspaceFolder}/nicodriveserver",
-            "useWSL" : true
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Debug NicoDrive Server",
+            "processId": "${command:PickProcess}",
+            "restart": true,
+            "protocol": "inspector"
         }
     ]
 }
