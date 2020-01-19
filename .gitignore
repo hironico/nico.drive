@@ -15,3 +15,5 @@ node_modules/*
 test/assets/litmus*
 
 data/
+
+nico.drive.pid
