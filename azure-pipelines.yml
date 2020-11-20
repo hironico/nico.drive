@@ -26,5 +26,11 @@ steps:
     rootFolderOrFile: '$(Build.BinariesDirectory)'
     includeRootFolder: true
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/zip'
     replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
+    ArtifactName: 'nicodrive-server-$(Build.BuildId)'
+    publishLocation: 'Container'
