@@ -27,6 +27,8 @@
   "author": "about.hironico.net",
   "license": "ISC",
   "dependencies": {
+    "@types/dotenv": "^8.2.0",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "webdav-server": "^2.6.2"
   },
