@@ -1,4 +1,5 @@
 # Node.js
+
 # Build a general Node.js project with npm.
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
@@ -19,3 +20,11 @@ steps:
     npm install
     npm run build
   displayName: 'npm install and build'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)'
+    includeRootFolder: true
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
+    replaceExistingArchive: true
