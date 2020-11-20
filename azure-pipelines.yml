@@ -21,16 +21,8 @@ steps:
     npm run build
   displayName: 'npm install and build'
 
-- task: ArchiveFiles@2
+- task: Npm@1
   inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)'
-    includeRootFolder: true
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
-    replaceExistingArchive: true
-
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
-    ArtifactName: 'nicodrive-server-${Build.BuildId)'
-    publishLocation: 'Container'
+    command: publish
+    publishRegistry: useFeed
+    publishFeed: nico.drive/nicodrive-server
