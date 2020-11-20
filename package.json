@@ -1,11 +1,12 @@
 {
   "name": "nico.drive",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "WebDav Server and cool user interface for web and mobile.",
   "main": "dist/index.js",
   "scripts": {
     "prebuild": "eslint --fix src/**",
     "build": "tsc",
+    "postbuild": "cp package.json ./dist/.",
     "prestart": "npm run build",
     "start": "node .",
     "test": "echo \"Error: no test specified\" && exit 1"
