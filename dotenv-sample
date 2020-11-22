@@ -28,11 +28,11 @@ SERVER_SSL_CERT_FILE=server.cert
 # web context means the root path where paths are exposed
 # user name and password to access the webdav 
 #
-DAV_PHYSICAL_PATH=/mnt/c/Users/nramo/source/nico.drive/data/
-DAV_MAPPED_PATH=/nico
+DAV_PHYSICAL_PATH=/path/to/local/data/
+DAV_MAPPED_PATH=/ateam
 DAV_WEB_CONTEXT=/dav
-DAV_USER=hironico
-DAV_PASSWORD=hironico
+DAV_USER=hannibalsmith
+DAV_PASSWORD=Sup3rS3cr3tP@ssw0rd
 
 #
 # Misc and debug config

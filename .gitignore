@@ -4,3 +4,8 @@ dist/
 node_modules/
 
 .npmrc
+
+.env
+
+server.cert
+server.key
