@@ -83,8 +83,8 @@ app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
 // to create a self signed cert use the following command:
 // openssl req -nodes -new -x509 -keyout server.key -out server.cert
 https.createServer({
-    key: fs.readFileSync('server.key'),
-    cert: fs.readFileSync('server.cert')
+    key: fs.readFileSync(process.env.SERVER_SSL_KEY_FILE),
+    cert: fs.readFileSync(process.env.SERVER_SSL_CERT_FILE)
 }, app).listen(port, () => {
     // tslint:disable-next-line:no-console
     console.log(`server started at https://localhost:${port}`);
