@@ -3,7 +3,7 @@
 # SAMPLE .Env file for configuring nico.drive server
 #
 # Copy this file and name it .env 
-#######################################################
+####################################################### 
 
 #
 # This is configuration file for nico.drive server.
