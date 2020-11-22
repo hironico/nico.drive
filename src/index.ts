@@ -38,7 +38,7 @@ const privilegeManager = new webdav.SimplePathPrivilegeManager();
 app.locals.privilegeManager = privilegeManager;
 
 // configure privileges
-privilegeManager.setRights(user, '/nico', [ 'all' ]);
+privilegeManager.setRights(user, process.env.DAV_MAPPED_PATH, [ 'all' ]);
 privilegeManager.setRights(adminUser, '/',  ['all' ]);
 
 // now configure routes
