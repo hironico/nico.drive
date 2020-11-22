@@ -7,6 +7,7 @@ Hironico nico.drive is a webdav server running on nodejs express. It features a 
 In order to get it up and running in your environment, you need :
 - To create a slef signed certificate and its key files or use [Let's Encrypt](https://letsencrypt.org/) for production.
 - COPY the "dotenv-sample" file into a file named ".env", then Adapt to reflect your current setup.
+- npm install
 - npm run build
 - npm run start
 - Connect WebDav client to your new server
