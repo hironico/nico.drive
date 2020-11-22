@@ -29,10 +29,3 @@ steps:
     publishRegistry: 'useFeed'
     publishFeed: 'e0aa946f-919b-4ff8-9b7c-a5a35aafb5db/217c8082-206f-483c-8230-e8b6f521293b'
 
-- task: Npm@1
-  inputs:
-    command: 'custom'
-    customCommand: 'version patch -m "new version patch from pipeline build." --force'
-    customRegistry: 'useFeed'
-    customFeed: 'e0aa946f-919b-4ff8-9b7c-a5a35aafb5db/217c8082-206f-483c-8230-e8b6f521293b'
-
