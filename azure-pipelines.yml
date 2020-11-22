@@ -1,11 +1,12 @@
 # Node.js
 
+
 # Build a general Node.js project with npm.
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
-trigger:
-- master
+# manual build only because we push to npm feed
+trigger: none
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -21,16 +22,17 @@ steps:
     npm run build
   displayName: 'npm install and build'
 
-- task: ArchiveFiles@2
+- task: Npm@1
   inputs:
-    rootFolderOrFile: '$(Build.BinariesDirectory)'
-    includeRootFolder: true
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
-    replaceExistingArchive: true
+    command: 'publish'
+    workingDir: 'dist'
+    publishRegistry: 'useFeed'
+    publishFeed: 'e0aa946f-919b-4ff8-9b7c-a5a35aafb5db/217c8082-206f-483c-8230-e8b6f521293b'
 
-- task: PublishBuildArtifacts@1
+- task: Npm@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/nicodrive-server-$(Build.BuildId).zip'
-    ArtifactName: 'nicodrive-server-${Build.BuildId)'
-    publishLocation: 'Container'
+    command: 'custom'
+    customCommand: 'version patch -m "new version patch from pipeline build." --force'
+    customRegistry: 'useFeed'
+    customFeed: 'e0aa946f-919b-4ff8-9b7c-a5a35aafb5db/217c8082-206f-483c-8230-e8b6f521293b'
+
