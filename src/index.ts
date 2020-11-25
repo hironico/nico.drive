@@ -29,7 +29,7 @@ app.locals.userManager = userManager;
 console.log('Creating DAV user : ' + process.env.DAV_USER + ' / ' + process.env.DAV_PASSWORD);
 
 const user = userManager.addUser(process.env.DAV_USER, process.env.DAV_PASSWORD, false);
-const adminUser = userManager.addUser('davadmin', 'BLAbla123_davadmin', true);
+const adminUser = userManager.addUser(process.env.DAV_ADMIN_USER, process.env.DAV_ADMIN_PASSWORD, true);
 
 // Privilege manager (tells which users can access which files/folders)
 const privilegeManager = new webdav.SimplePathPrivilegeManager();
