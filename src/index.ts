@@ -1,22 +1,35 @@
 import { v2 as webdav } from 'webdav-server';
 import dotenv from "dotenv";
 import express from "express";
+import cors from "cors";
 import https from "https";
 import fs from "fs";
 
 import * as authApi from "./routes/auth";
+
+import * as thumbApi from "./routes/thumb";
 
 // init environment configuration
 dotenv.config();
 
 const app = express();
 
+// enable CORS for the webdav server to be used by a client in the browser.
+// we use the regular cors methods plus thoses from RFC2518 aka webdav (6 last http methods)
+const corsOptions = {
+    "origin": "*",
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK",
+    "preflightContinue": false,
+    "optionsSuccessStatus": 204
+  };
+app.use(cors(corsOptions));
+
 // available from configuration file .env
 const port = process.env.SERVER_PORT;
 
 // define a route handler for the default home page
 app.get("/", (req, res) => {
-    res.send("This is nico.drive web user interface. Come back later to see how great this interface performs when it is finished!");
+    res.send("This is nico.drive webdav server.");
 });
 
 // User manager (tells who are the users)
@@ -43,6 +56,7 @@ privilegeManager.setRights(adminUser, '/',  ['all' ]);
 
 // now configure routes
 authApi.register(app);
+thumbApi.register(app);
 
 const server = new webdav.WebDAVServer({
     // HTTP Digest authentication with the realm 'Default realm'
@@ -70,9 +84,11 @@ server.afterRequest((arg, next) => {
 const localPhysicalPath = process.env.DAV_PHYSICAL_PATH;
 server.setFileSystem(process.env.DAV_MAPPED_PATH, new webdav.PhysicalFileSystem(localPhysicalPath), (success) => {
     if (success) {
-        console.log('Successfully loaded the physical path : ' + localPhysicalPath);
+        console.log(`Successfully loaded the physical path:  ${localPhysicalPath} into mapped path as: ${process.env.DAV_MAPPED_PATH}`);
     } else {
-        console.log('ERROR: could not load the physical path: ' + localPhysicalPath);
+        const errMsg = `Cannot map physical path: ${localPhysicalPath} into: ${process.env.DAV_MAPPED_PATH}`
+        console.log(errMsg);
+        throw new Error(errMsg);
     }
 });
 
@@ -87,5 +103,5 @@ https.createServer({
     cert: fs.readFileSync(process.env.SERVER_SSL_CERT_FILE)
 }, app).listen(port, () => {
     // tslint:disable-next-line:no-console
-    console.log(`server started at https://localhost:${port}`);
+    console.log(`server started at https://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
 });
