@@ -9,6 +9,8 @@ import * as authApi from "./routes/auth";
 
 import * as thumbApi from "./routes/thumb";
 
+import * as metadataApi from './routes/metadata';
+
 // init environment configuration
 dotenv.config();
 
@@ -54,9 +56,10 @@ app.locals.privilegeManager = privilegeManager;
 privilegeManager.setRights(user, process.env.DAV_MAPPED_PATH, [ 'all' ]);
 privilegeManager.setRights(adminUser, '/',  ['all' ]);
 
-// now configure routes
+// now configure additional features routes
 authApi.register(app);
 thumbApi.register(app);
+metadataApi.register(app);
 
 const server = new webdav.WebDAVServer({
     // HTTP Digest authentication with the realm 'Default realm'
