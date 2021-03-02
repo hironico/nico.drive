@@ -9,7 +9,7 @@ export const register = (app: express.Application) : void => {
     app.use('/meta', bodyParser.urlencoded({ extended: false }));
     app.use('/meta', bodyParser.json({ type: 'application/json' }));
 
-    app.get('/meta/exif', (req, res) => {
+    app.post('/meta/exif', (req, res) => {
         const filename: string = req.body.filename;
 
         if (typeof filename === 'undefined' || filename === null) {
