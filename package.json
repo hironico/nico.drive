@@ -35,7 +35,8 @@
     "exif": "^0.6.0",
     "express": "^4.17.1",
     "sharp": "^0.27.2",
-    "webdav-server": "^2.6.2"
+    "webdav-server": "^2.6.2",
+    "xml2js": "^0.4.23"
   },
   "devDependencies": {
     "@types/cors": "^2.8.10",
@@ -43,6 +44,7 @@
     "@types/express": "^4.17.8",
     "@types/node": "^14.14.6",
     "@types/sharp": "^0.27.1",
+    "@types/xml2js": "^0.4.8",
     "@typescript-eslint/eslint-plugin": "^4.6.1",
     "@typescript-eslint/parser": "^4.6.1",
     "eslint": "^7.12.1",
