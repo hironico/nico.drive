@@ -1,6 +1,7 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import {ExifImage, ExifData} from "exif";
+import XMPLoader from "../lib/xmp";
 
 export const register = (app: express.Application) : void => {
 
@@ -17,7 +18,7 @@ export const register = (app: express.Application) : void => {
             return;
         }
 
-        console.log(`Requesting meta info for file ${req.body.filename}`);
+        console.log(`Requesting EXIF info for file ${req.body.filename}`);
 
         const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
 
@@ -39,6 +40,37 @@ export const register = (app: express.Application) : void => {
             }
         } else {
             res.status(402).send('Not surpported file for exif extract.').end();
+        }
+    });
+
+    app.post('/meta/xmp', (req, res) => {
+        const filename: string = req.body.filename;
+        const rawResult: boolean = req.body.rawResult;
+
+        if (typeof filename === 'undefined' || filename === null) {
+            res.status(403).send('You must provide filename in the request body to get exif data if any.').end();
+            return;
+        }
+
+        console.log(`Requesting XMP info for file ${req.body.filename}`);
+
+        const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+
+        res.set({
+            'Content-Type': 'application/json',
+            'cache-control': 'max-age=0'
+        });
+
+        if (filename.toLowerCase().endsWith('.jpg')) {
+            const loader: XMPLoader = new XMPLoader(fullFilename);
+            const xmp: string = loader.find();
+            loader.parse(xmp, rawResult)
+                .then(parsedData => {
+                    res.status(200).send(JSON.stringify(parsedData));
+                })
+                .catch(error => {
+                    res.status(500).send(JSON.stringify(error)).end();
+                });
         }
     });
 }
