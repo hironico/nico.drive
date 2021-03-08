@@ -3,6 +3,30 @@ import bodyParser from "body-parser";
 import fs from "fs";
 import sharp from "sharp";
 
+// supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
+// see doc at : https://sharp.pixelplumbing.com/
+const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'GIF', 'SVG'];
+
+const fileSupported = (filename: string): boolean => {
+    if (typeof filename === 'undefined' || filename === null) {
+        return false;
+    }
+
+    if (filename.startsWith('.')) {
+        return false;
+    }
+
+    const index = filename.lastIndexOf('.');
+    if (index < 0) {
+        return false;
+    }
+
+    const extention = filename.toUpperCase().substring(index+1);    
+    
+    const formatIndex = supportedFormats.indexOf(extention);
+    return formatIndex !== -1;
+}
+
 export const register = (app: express.Application) : void => {
 
     // configure body parser to accept json only for /thumb/... request paths
@@ -13,6 +37,9 @@ export const register = (app: express.Application) : void => {
     app.post('/thumb', (req, res) => {
 
         const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+
+        console.log(`Requesting EXIF info for file ${fullFilename}`);
+
         const width = req.body.width ? req.body.width : 200;
         const height = req.body.heigh ? req.body.height : 200;
 
@@ -23,9 +50,11 @@ export const register = (app: express.Application) : void => {
             return;
         }
 
-        // check we support this image 
-        // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
-        // see doc at : https://sharp.pixelplumbing.com/
+        // check we support this image (if it is one)
+        if (!fileSupported(fullFilename)) {
+            res.status(204).send('').end();
+            return;
+        }
         
         //TODO use cache ?
 

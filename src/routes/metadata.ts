@@ -69,7 +69,7 @@ export const register = (app: express.Application) : void => {
                     res.status(200).send(JSON.stringify(parsedData));
                 })
                 .catch(error => {
-                    res.status(500).send(JSON.stringify(error)).end();
+                    res.status(404).send(JSON.stringify(error)).end();
                 });
         }
     });
