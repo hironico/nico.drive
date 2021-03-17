@@ -1,5 +1,6 @@
 import * as express from "express";
 import bodyParser from "body-parser";
+import { OptionsJson } from "body-parser";
 import {ExifImage, ExifData} from "exif";
 import XMPLoader from "../lib/xmp";
 
@@ -7,8 +8,10 @@ export const register = (app: express.Application) : void => {
 
     // configure body parser to accept json only for /meta/... request paths
     // in order to let the original dav server configuration untouched
-    app.use('/meta', bodyParser.urlencoded({ extended: false }));
-    app.use('/meta', bodyParser.json({ type: 'application/json' }));
+    const jsonOpts: OptionsJson = {
+        type: 'application/json'
+    }    
+    app.use('/meta', bodyParser.json(jsonOpts));
 
     app.post('/meta/exif', (req, res) => {
         const filename: string = req.body.filename;
@@ -17,8 +20,6 @@ export const register = (app: express.Application) : void => {
             res.status(403).send('You must provide filename in the request body to get exif data if any.').end();
             return;
         }
-
-        console.log(`Requesting EXIF info for file ${req.body.filename}`);
 
         const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
 
@@ -48,13 +49,14 @@ export const register = (app: express.Application) : void => {
         const rawResult: boolean = req.body.rawResult;
 
         if (typeof filename === 'undefined' || filename === null) {
+            console.log(`Cannot get XMP meta data. File not found: ${filename}`)
             res.status(403).send('You must provide filename in the request body to get exif data if any.').end();
             return;
         }
 
-        console.log(`Requesting XMP info for file ${req.body.filename}`);
-
         const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+
+        console.log(`Loading XMP info from file: ${fullFilename}...`);
 
         res.set({
             'Content-Type': 'application/json',
@@ -64,8 +66,19 @@ export const register = (app: express.Application) : void => {
         if (filename.toLowerCase().endsWith('.jpg')) {
             const loader: XMPLoader = new XMPLoader(fullFilename);
             const xmp: string = loader.find();
-            loader.parse(xmp, rawResult)
-                .then(parsedData => {
+
+            if (!xmp) {
+                res.status(404).send('No XMP information found in this file: ' + filename).end();
+                return;
+            }
+
+            const promise = loader.parse(xmp, rawResult);
+            if (promise === null) {
+                res.status(404).send('No XMP information found in this file: ' + filename).end();
+                return;
+            }
+
+            promise.then(parsedData => {
                     res.status(200).send(JSON.stringify(parsedData));
                 })
                 .catch(error => {

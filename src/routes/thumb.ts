@@ -38,8 +38,6 @@ export const register = (app: express.Application) : void => {
 
         const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
 
-        console.log(`Requesting EXIF info for file ${fullFilename}`);
-
         const width = req.body.width ? req.body.width : 200;
         const height = req.body.heigh ? req.body.height : 200;
 
