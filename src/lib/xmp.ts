@@ -94,8 +94,7 @@ class XMPLoader {
             const xmpmeta = xmp['x:xmpmeta'];
             const description = xmpmeta['rdf:RDF'][0]['rdf:Description'][0];
             const descriptionList = description['$'];
-
-
+            
             Object.keys(descriptionList).forEach(key => {
                 if (!key.startsWith('crs:') && !key.startsWith('xmlns')) {
                     // console.log(`${key} => ${descriptionList[key]}`);
@@ -115,7 +114,9 @@ class XMPLoader {
         if (!xmp) {
             xmp = this.find();
             if (!xmp) {
-                return null;
+                return new Promise<XMPElement>((resolve, reject) => {                    
+                    reject('No XMP information found in this file.');
+                });
             }
         }
 
