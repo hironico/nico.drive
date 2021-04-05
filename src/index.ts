@@ -19,11 +19,14 @@ const app = express();
 // enable CORS for the webdav server to be used by a client in the browser.
 // we use the regular cors methods plus thoses from RFC2518 aka webdav (6 last http methods)
 const corsOptions = {
-    "origin": "*",
-    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK",
-    "preflightContinue": false,
-    "optionsSuccessStatus": 204
+    origin: true,
+    credentials: true,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK",
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   };
+
+app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
 // available from configuration file .env
