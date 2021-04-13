@@ -2,20 +2,11 @@
 ## Description
 Hironico nico.drive is a webdav server running on nodejs express. It features the DAV protocol plus additional REST API for hosted files and administration functions. some features are still to be developped however :-)
 
-### Features
+## Features
 * Highly configurable WebDAV compliant server (see dotenv-sample file)
 * Additional features as additional REST api :
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
-
-### Future features (in no particular order)
-* Image thumbnail advanced cache system (in-memory or database)
-* Integration of the Webdav Explorer client UI into the server under /client url
-* Administration tools:
-    - multiple user 
-    - repo creation and configuration
-    - authorization tools
-* Multiple repos (one repo for one physical path)
 
 ## Developper information
 
