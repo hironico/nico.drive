@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import https from "https";
 import fs from "fs";
+import path from "path";
 
 import * as authApi from "./routes/auth";
 
@@ -33,9 +34,9 @@ app.use(cors(corsOptions));
 const port = process.env.SERVER_PORT;
 
 // define a route handler for the default home page
-app.get("/", (req, res) => {
-    res.send("This is nico.drive webdav server.");
-});
+const clientDir = path.join(__dirname, '..', process.env.CLIENT_ROOT_DIR);
+console.log(`Client directory to serve set to: ${clientDir}`);
+app.use("/", express.static(clientDir));
 
 // User manager (tells who are the users)
 const userManager = new webdav.SimpleUserManager();

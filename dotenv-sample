@@ -40,6 +40,13 @@ DAV_USER=hannibalsmith
 DAV_PASSWORD=Sup3rS3cr3tP@ssw0rd
 
 #
+# Nico's drive server comes with its client embedded.
+# but you can specify another directory containing anything you like
+# to be accessible at the web root of the server. for instance at https://yourdomain.com/
+#
+CLIENT_ROOT_DIR=./client
+
+#
 # Misc and debug config
 #
 
