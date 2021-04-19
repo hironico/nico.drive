@@ -45,7 +45,7 @@ const userManager = new webdav.SimpleUserManager();
 app.locals.userManager = userManager;
 
 // configure users for app
-console.log('Creating DAV user : ' + process.env.DAV_USER + ' / ' + process.env.DAV_PASSWORD);
+console.log('Creating DAV user : ' + process.env.DAV_USER);
 
 const user = userManager.addUser(process.env.DAV_USER, process.env.DAV_PASSWORD, false);
 const adminUser = userManager.addUser(process.env.DAV_ADMIN_USER, process.env.DAV_ADMIN_PASSWORD, true);
