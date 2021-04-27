@@ -47,6 +47,14 @@ DAV_PASSWORD=Sup3rS3cr3tP@ssw0rd
 CLIENT_ROOT_DIR=./client
 
 #
+# Support for digital camera raw files.
+# Tell where to find dcraw utility program.
+# default value is ./tools/dcraw 
+# you can build the dcraw binary from source in the ./tools/ directory.
+#
+DCRAW_PATH=./tools/dcraw
+
+#
 # Misc and debug config
 #
 

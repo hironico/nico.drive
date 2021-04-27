@@ -10,7 +10,8 @@
     "prestart": "npm run build",
     "dev": "nodemon --watch src -e ts,ejs --exec npm run start",
     "start": "node .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dcraw": "cd ./tools/ && ./build_dcraw.sh && cd .."
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,7 @@
     "ios"
   ],
   "author": "about.hironico.net",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@types/dotenv": "^8.2.0",
     "cors": "^2.8.5",

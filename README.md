@@ -7,6 +7,7 @@ Hironico's nico.drive is a webdav server running on nodejs. It features the DAV 
 * Additional features as additional REST api :
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
+    - digital camera raw file formats support for thumbs
 * Embedded WebDAV explorer web application
 
 ## Developper information
@@ -21,6 +22,7 @@ In order to get it up and running in your environment, you need :
 - COPY the "dotenv-sample" file into a file named ".env", then Adapt to reflect your current setup.
 - npm install
 - npm run build
+- Optional: npm run dcraw
 - npm run start
 - Connect WebDav client to your new server
 
@@ -36,4 +38,5 @@ In order to get it up and running in your environment, you need :
 * After that we needed configuration options: [so we use the dotEnv project](https://developer.okta.com/blog/2018/11/15/node-express-typescript#a-better-way-to-manage-configuration-settings-in-nodejs)
 * Created the azure-pipelines.yml to get continuous integration from Azure DevOps
 * Thumbnail library is [SHARP](https://www.npmjs.com/package/sharp)
+* Digital Camera RAW file support added via dcraw : https://www.dechifro.org/dcraw/
 
