@@ -1,22 +1,19 @@
 # nico.drive
 
-Hironico's nico.drive is a webdav server running on nodejs. It features the DAV protocol plus additional REST API for hosted files and administration functions. To take full advantage of the additional APIs, the server comes with its web application embbedded (more info at the nico.drive.client project)
+Hironico's nico.drive is a webdav server running on nodejs. It features full support of WebDAV protocol plus additional exclusive features to ease display and search of hosted files. To take full advantage of the additional APIs, the server comes with its own web application embbedded (aka the nico.drive.client project). 
+
+It's an all-in-one solution to backup important files and memories yet begin very simple to install and use.
 
 ## Features
-* Highly configurable WebDAV compliant server (see dotenv-sample file)
+* WebDAV compliant server compatible with all WebDav compatible clients.
+* Out of the box ready tu run although highly configurable (see dotenv-sample file)
 * Additional features as additional REST api :
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
     - digital camera raw file formats support for thumbs
 * Embedded WebDAV explorer web application
 
-## Developper information
-
-The following is developper instructions on how to contribute into the code of Nico's Drive.
-Is contains various links where the author found instructions on how to setup teh development environment,
-code, libraries used etc...
-
-### Getting hands on the code
+## Getting started
 In order to get it up and running in your environment, you need :
 - To create a slef signed certificate and its key files or use [Let's Encrypt](https://letsencrypt.org/) for production.
 - COPY the "dotenv-sample" file into a file named ".env", then Adapt to reflect your current setup.
@@ -29,6 +26,12 @@ In order to get it up and running in your environment, you need :
   or
   
   Point you browser at the root url of your server.
+
+## Developper information
+
+The following is developper instructions aboutthe way Nico's Drive has been built.
+Is contains various links where the author found instructions on how to setup teh development environment,
+code, libraries used etc...
 
 ### Full documentation reference (educational)
 
