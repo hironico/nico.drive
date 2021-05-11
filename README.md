@@ -2,11 +2,11 @@
 
 Hironico's nico.drive is a webdav server running on nodejs. It features full support of WebDAV protocol plus additional exclusive features to ease display and search of hosted files. To take full advantage of the additional APIs, the server comes with its own web application embbedded (aka the nico.drive.client project). 
 
-It's an all-in-one solution to backup important files and memories yet begin very simple to install and use.
+It's an all-in-one solution to backup important files and memories yet very simple to install and use.
 
 ## Features
-* WebDAV compliant server compatible with all WebDav compatible clients.
-* Out of the box ready tu run although highly configurable (see dotenv-sample file)
+* WebDAV compliant server compatible with all WebDav enabled devices such as NAS (Synology, QNap etc...)
+* Out of the box ready to run but also highly configurable (see dotenv-sample file)
 * Additional features as additional REST api :
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
@@ -15,21 +15,25 @@ It's an all-in-one solution to backup important files and memories yet begin ver
 
 ## Getting started
 In order to get it up and running in your environment, you need :
-- To create a slef signed certificate and its key files or use [Let's Encrypt](https://letsencrypt.org/) for production.
-- COPY the "dotenv-sample" file into a file named ".env", then Adapt to reflect your current setup.
+- A server box : private cloud or dedicated machine, the choice is yours. For instance, we use a Linux dedicated box.
+- An SSL certificate (with its key). Self signed for development/testing or use [Let's Encrypt](https://letsencrypt.org/) for production.
+
+Assuming you have configured your box with a dedicated user ; to run your server, then you need to:
+- Git clone the repository
+- COPY the "dotenv-sample" file into a file named ".env", then adapt to reflect your current setup.
 - npm install
 - npm run build
-- Optional: npm run dcraw
+- If you have digital camera files: npm run dcraw
 - npm run start
-- Connect WebDav client to your new server
+- Connect WebDav client to your new server (follow vendor instructions)
 
   or
   
-  Point you browser at the root url of your server.
+  Point you browser at the root url of your server (see .env file for setup)
 
 ## Developper information
 
-The following is developper instructions aboutthe way Nico's Drive has been built.
+The following is developper instructions about the way Nico's Drive has been built.
 Is contains various links where the author found instructions on how to setup teh development environment,
 code, libraries used etc...
 
