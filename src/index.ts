@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import https from "https";
+import http from "http";
 import fs from "fs";
 import path from "path";
 
@@ -102,13 +103,20 @@ server.setFileSystem(process.env.DAV_MAPPED_PATH, new webdav.PhysicalFileSystem(
 // activate webdav server with the specified path to store files.
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
 
-// create HTTPS server.
+// create HTTPS server only if enabled in the configuration
 // to create a self signed cert use the following command:
 // openssl req -nodes -new -x509 -keyout server.key -out server.cert
-https.createServer({
-    key: fs.readFileSync(process.env.SERVER_SSL_KEY_FILE),
-    cert: fs.readFileSync(process.env.SERVER_SSL_CERT_FILE)
-}, app).listen(port, () => {
-    // tslint:disable-next-line:no-console
-    console.log(`server started at https://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
-});
+if (process.env.SERVER_SSL_ENABLED === 'true') {
+    https.createServer({
+        key: fs.readFileSync(process.env.SERVER_SSL_KEY_FILE),
+        cert: fs.readFileSync(process.env.SERVER_SSL_CERT_FILE)
+    }, app).listen(port, () => {
+        // tslint:disable-next-line:no-console
+        console.log(`Server started at https://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
+    });
+} else {
+    http.createServer(app).listen(port, () => {
+        // tslint:disable-next-line:no-console
+        console.log(`Development server started at http://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
+    })
+}
