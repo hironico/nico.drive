@@ -1,4 +1,4 @@
-import { v2 as webdav } from 'webdav-server';
+import { v2 as webdav } from "webdav-server";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
@@ -11,10 +11,27 @@ import * as authApi from "./routes/auth";
 
 import * as thumbApi from "./routes/thumb";
 
-import * as metadataApi from './routes/metadata';
+import * as metadataApi from "./routes/metadata";
+
+// if no .env file found then no need to go further
+try {
+    fs.statSync('.env');
+} catch ( problem ) {
+    console.log('Configuration file not found: .env : COPY and adapt the dotenv-sample file to create one.');
+    process.exit(-99);
+}
 
 // init environment configuration
 dotenv.config();
+
+// now testing some of the configuration files ...
+try {
+    fs.statSync(process.env.SERVER_SSL_KEY_FILE);
+    fs.statSync(process.env.SERVER_SSL_CERT_FILE);
+} catch (problem ) {
+    console.log('Check the .env configuration file and ensure the server cert and key files are present and readable.');
+    process.exit(-89);
+}
 
 const app = express();
 
@@ -34,9 +51,10 @@ app.use(cors(corsOptions));
 // available from configuration file .env
 const port = process.env.SERVER_PORT;
 
-// define a route handler for the default home page
+// define a route handler for the client web app aka nico.drive.client
+// see hironico GitHub project
 const clientDir = path.join(__dirname, '..', process.env.CLIENT_ROOT_DIR);
-console.log(`Client directory to serve set to: ${clientDir}`);
+console.log(`Client web application will be served from: ${clientDir}`);
 app.use("/", express.static(clientDir));
 
 // User manager (tells who are the users)
@@ -66,6 +84,7 @@ authApi.register(app);
 thumbApi.register(app);
 metadataApi.register(app);
 
+// create the server using HTTPS with key and cert files
 const server = new webdav.WebDAVServer({
     // HTTP Digest authentication with the realm 'Default realm'
     // httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Default realm'),
@@ -74,9 +93,9 @@ const server = new webdav.WebDAVServer({
     privilegeManager: privilegeManager
 });
 
-// display some logs if required.
+// display some logs if required by the configuration.
+const debugAfterRequest = process.env.LOG_AFTER_REQUEST;
 server.afterRequest((arg, next) => {
-    const debugAfterRequest = process.env.LOG_AFTER_REQUEST;
     if (debugAfterRequest !== '1') {
         next();
         return;
@@ -90,6 +109,12 @@ server.afterRequest((arg, next) => {
 });
 
 const localPhysicalPath = process.env.DAV_PHYSICAL_PATH;
+try {
+    fs.statSync(process.env.DAV_PHYSICAL_PATH);
+} catch (problem ) {
+    console.log('Check the .env configuration file and ensure that the DAV_PHYSICAL_PATH exists and is readable.');
+    process.exit(-79);
+}
 server.setFileSystem(process.env.DAV_MAPPED_PATH, new webdav.PhysicalFileSystem(localPhysicalPath), (success) => {
     if (success) {
         console.log(`Successfully loaded the physical path:  ${localPhysicalPath} into mapped path as: ${process.env.DAV_MAPPED_PATH}`);
