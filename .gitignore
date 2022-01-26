@@ -13,3 +13,7 @@ server.key
 *.log
 
 tools/dcraw
+
+cert.pem
+
+key.pem
