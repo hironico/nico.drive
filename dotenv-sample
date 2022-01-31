@@ -23,15 +23,22 @@
 #
 # To generate a PRODUCTION certificate, use a proper signed cert, for instance at let's encrypt.
 #
+# DEVELOPMENT ONLY : To disable SSL completely, set the SERVER_SSL_ENABLED parameter to false
+#
 SERVER_PORT=8080
 SERVER_SSL_KEY_FILE=server.key
 SERVER_SSL_CERT_FILE=server.cert
+SERVER_SSL_ENABLED=true
 
 #
-# web dav setup
-# physical and mapped paths to store data and expose
-# web context means the root path where paths are exposed
+# web dav setup : tell where is your local directory and how to name it in the url.
+# The web context is the root path of the url to distinguish the webdav server 
+# from the other servers you may have on your machine/server. this will enable to have
+# another web dav server under either a different web context and/or user on the same computer!
 # user name and password to access the webdav 
+#
+# For instance: https://youserver.com/dav/ateam will serve the /path/to/local/data folder
+# only accessible for creadentials of hannibalsmith
 #
 DAV_PHYSICAL_PATH=/path/to/local/data/
 DAV_MAPPED_PATH=/ateam
