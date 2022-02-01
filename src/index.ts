@@ -16,7 +16,7 @@ import * as metadataApi from "./routes/metadata";
 // if no .env file found then no need to go further
 try {
     fs.statSync('.env');
-} catch ( problem ) {
+} catch (problem) {
     console.log('Configuration file not found: .env : COPY and adapt the dotenv-sample file to create one.');
     process.exit(-99);
 }
@@ -24,13 +24,15 @@ try {
 // init environment configuration
 dotenv.config();
 
-// now testing some of the configuration files ...
-try {
-    fs.statSync(process.env.SERVER_SSL_KEY_FILE);
-    fs.statSync(process.env.SERVER_SSL_CERT_FILE);
-} catch (problem ) {
-    console.log('Check the .env configuration file and ensure the server cert and key files are present and readable.');
-    process.exit(-89);
+// now testing SSL cert files if SSL is actually enabled files ...
+if (process.env.SERVER_SLL_ENABLED === 'true') {
+    try {
+        fs.statSync(process.env.SERVER_SSL_KEY_FILE);
+        fs.statSync(process.env.SERVER_SSL_CERT_FILE);
+    } catch (problem) {
+        console.log('Check the .env configuration file and ensure the server cert and key files are present and readable.');
+        process.exit(-89);
+    }
 }
 
 const app = express();
@@ -43,7 +45,7 @@ const corsOptions = {
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK",
     preflightContinue: false,
     optionsSuccessStatus: 204
-  };
+};
 
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
@@ -76,8 +78,8 @@ const privilegeManager = new webdav.SimplePathPrivilegeManager();
 app.locals.privilegeManager = privilegeManager;
 
 // configure privileges
-privilegeManager.setRights(user, process.env.DAV_MAPPED_PATH, [ 'all' ]);
-privilegeManager.setRights(adminUser, '/',  ['all' ]);
+privilegeManager.setRights(user, process.env.DAV_MAPPED_PATH, ['all']);
+privilegeManager.setRights(adminUser, '/', ['all']);
 
 // now configure additional features routes
 authApi.register(app);
@@ -111,7 +113,7 @@ server.afterRequest((arg, next) => {
 const localPhysicalPath = process.env.DAV_PHYSICAL_PATH;
 try {
     fs.statSync(process.env.DAV_PHYSICAL_PATH);
-} catch (problem ) {
+} catch (problem) {
     console.log('Check the .env configuration file and ensure that the DAV_PHYSICAL_PATH exists and is readable.');
     process.exit(-79);
 }
