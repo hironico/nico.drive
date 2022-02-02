@@ -7,7 +7,7 @@ import sharp from "sharp";
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
-const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2'];
+const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'DNG'];
 
 const getFileExtention = (filename: string): string => {
     if (typeof filename === 'undefined' || filename === null) {
