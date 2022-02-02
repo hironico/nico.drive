@@ -127,12 +127,11 @@ server.setFileSystem(process.env.DAV_MAPPED_PATH, new webdav.PhysicalFileSystem(
     }
 });
 
-// activate webdav server with the specified path to store files.
+// activate webdav server as an expressjs handler
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
 
 // create HTTPS server only if enabled in the configuration
-// to create a self signed cert use the following command:
-// openssl req -nodes -new -x509 -keyout server.key -out server.cert
+// see dotenv-sample file for instructions about SSL and HTTPS
 if (process.env.SERVER_SSL_ENABLED === 'true') {
     https.createServer({
         key: fs.readFileSync(process.env.SERVER_SSL_KEY_FILE),
