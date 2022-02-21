@@ -6,7 +6,6 @@
   "scripts": {
     "prebuild": "eslint --fix src/**",
     "build": "tsc",
-    "postbuild": "cp package.json ./dist/.",
     "prestart": "npm run build",
     "dev": "nodemon --watch src -e ts,ejs --exec npm run start",
     "start": "node .",
