@@ -40,7 +40,7 @@ export const register = (app: express.Application) : void => {
                 res.status(500).send(error).end();
             }
         } else {
-            res.status(402).send('Not surpported file for exif extract.').end();
+            res.status(415).send('Not surpported file nature for exif extract.').end();
         }
     });
 
