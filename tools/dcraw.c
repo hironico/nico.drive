@@ -303,7 +303,7 @@ ushort CLASS sget2 (uchar *s)
 ushort CLASS get2()
 {
   uchar str[2] = { 0xff,0xff };
-  fread (str, 1, 2, ifp);
+  size_t bcount = fread (str, 1, 2, ifp);
   return sget2(str);
 }
 
@@ -319,7 +319,7 @@ unsigned CLASS sget4 (uchar *s)
 unsigned CLASS get4()
 {
   uchar str[4] = { 0xff,0xff,0xff,0xff };
-  fread (str, 1, 4, ifp);
+  size_t bcount = fread (str, 1, 4, ifp);
   return sget4(str);
 }
 
@@ -742,7 +742,7 @@ int CLASS canon_has_lowbits()
   int ret=1, i;
 
   fseek (ifp, 0, SEEK_SET);
-  fread (test, 1, sizeof test, ifp);
+  size_t bcount = fread (test, 1, sizeof test, ifp);
   for (i=540; i < sizeof test - 1; i++)
     if (test[i] == 0xff) {
       if (test[i+1]) return 1;
@@ -820,12 +820,13 @@ int CLASS ljpeg_start (struct jhead *jh, int info_only)
   memset (jh, 0, sizeof *jh);
   jh->restart = INT_MAX;
   if ((fgetc(ifp),fgetc(ifp)) != 0xd8) return 0;
+  size_t bcount = 0;
   do {
     if (!fread (data, 2, 2, ifp)) return 0;
     tag =  data[0] << 8 | data[1];
     len = (data[2] << 8 | data[3]) - 2;
     if (tag <= 0xff00) return 0;
-    fread (data, 1, len, ifp);
+    bcount = fread (data, 1, len, ifp);
     switch (tag) {
       case 0xffc3:
 	jh->sraw = ((data[7] >> 4) * (data[7] & 15) - 1) & 3;
@@ -1293,8 +1294,9 @@ int CLASS nikon_e2100()
   int i;
 
   fseek (ifp, 0, SEEK_SET);
+  size_t bcount = 0;
   for (i=0; i < 1024; i++) {
-    fread (t, 1, 12, ifp);
+    bcount = fread (t, 1, 12, ifp);
     if (((t[2] & t[4] & t[7] & t[9]) >> 4
 	& t[1] & t[6] & t[8] & t[11] & 3) != 3)
       return 0;
@@ -1316,7 +1318,7 @@ void CLASS nikon_3700()
     { 0x33, "Olympus", "C740UZ" } };
 
   fseek (ifp, 3072, SEEK_SET);
-  fread (dp, 1, 24, ifp);
+  size_t bcount = fread (dp, 1, 24, ifp);
   bits = (dp[8] & 3) << 4 | (dp[20] & 3);
   for (i=0; i < sizeof table / sizeof *table; i++)
     if (bits == table[i].bits) {
@@ -1334,7 +1336,7 @@ int CLASS minolta_z2()
   char tail[424];
 
   fseek (ifp, -sizeof tail, SEEK_END);
-  fread (tail, 1, sizeof tail, ifp);
+  size_t bcount = fread (tail, 1, sizeof tail, ifp);
   for (nz=i=0; i < sizeof tail; i++)
     if (tail[i]) nz++;
   return nz > 20;
@@ -1349,7 +1351,7 @@ void CLASS ppm_thumb()
   thumb = (char *) malloc (thumb_length);
   merror (thumb, "ppm_thumb()");
   fprintf (ofp, "P6\n%d %d\n255\n", thumb_width, thumb_height);
-  fread  (thumb, 1, thumb_length, ifp);
+  size_t bcount = fread  (thumb, 1, thumb_length, ifp);
   fwrite (thumb, 1, thumb_length, ofp);
   free (thumb);
 }
@@ -1380,7 +1382,7 @@ void CLASS layer_thumb()
   merror (thumb, "layer_thumb()");
   fprintf (ofp, "P%d\n%d %d\n255\n",
 	5 + (colors >> 1), thumb_width, thumb_height);
-  fread (thumb, thumb_length, colors, ifp);
+  size_t bcount = fread (thumb, thumb_length, colors, ifp);
   for (i=0; i < thumb_length; i++)
     FORCC putc (thumb[i+thumb_length*(map[thumb_misc >> 8][c]-'0')], ofp);
   free (thumb);
@@ -2011,8 +2013,8 @@ unsigned CLASS pana_bits (int nbits)
 
   if (!nbits) return vbits=0;
   if (!vbits) {
-    fread (buf+load_flags, 1, 0x4000-load_flags, ifp);
-    fread (buf, 1, load_flags, ifp);
+    size_t bcount = fread (buf+load_flags, 1, 0x4000-load_flags, ifp);
+    bcount = fread (buf, 1, load_flags, ifp);
   }
   vbits = (vbits - nbits) & 0x1ffff;
   byte = vbits >> 3 ^ 0x3ff0;
@@ -2685,7 +2687,7 @@ void CLASS sony_load_raw()
   order = 0x4d4d;
   key = get4();
   fseek (ifp, 164600, SEEK_SET);
-  fread (head, 1, 40, ifp);
+  size_t bcount = fread (head, 1, 40, ifp);
   sony_decrypt ((unsigned *) head, 10, 1, key);
   for (i=26; i-- > 22; )
     key = key << 8 | head[i];
@@ -2728,8 +2730,9 @@ void CLASS sony_arw2_load_raw()
 
   data = (uchar *) malloc (raw_width+1);
   merror (data, "sony_arw2_load_raw()");
+  size_t bcount = 0;
   for (row=0; row < height; row++) {
-    fread (data, 1, raw_width, ifp);
+    bcount = fread (data, 1, raw_width, ifp);
     for (dp=data, col=0; col < raw_width-30; dp+=16) {
       max = 0x7ff & (val = sget4(dp));
       min = 0x7ff & val >> 11;
@@ -3090,8 +3093,9 @@ void CLASS foveon_thumb()
     if (bwide < thumb_width*3) return;
     buf = (char *) malloc (bwide);
     merror (buf, "foveon_thumb()");
+    size_t bcount = 0;
     for (row=0; row < thumb_height; row++) {
-      fread  (buf, 1, bwide, ifp);
+      bcount = fread  (buf, 1, bwide, ifp);
       fwrite (buf, 3, thumb_width, ofp);
     }
     free (buf);
@@ -3197,7 +3201,7 @@ void CLASS foveon_load_camf()
   wide = get4();
   high = get4();
   if (type == 2) {
-    fread (meta_data, 1, meta_length, ifp);
+    size_t bcount = fread (meta_data, 1, meta_length, ifp);
     for (i=0; i < meta_length; i++) {
       high = (high * 1597 + 51749) % 244944;
       wide = high * (INT64) 301593171 >> 24;
@@ -3928,8 +3932,9 @@ void CLASS subtract (const char *fname)
   }
   pixel = (ushort *) calloc (width, sizeof *pixel);
   merror (pixel, "subtract()");
+  size_t bcount = 0;
   for (row=0; row < height; row++) {
-    fread (pixel, 2, width, fp);
+    bcount = fread (pixel, 2, width, fp);
     for (col=0; col < width; col++)
       BAYER(row,col) = MAX (BAYER(row,col) - ntohs(pixel[col]), 0);
   }
@@ -5195,7 +5200,7 @@ void CLASS parse_makernote (int base, int uptag)
    its own byte-order!), or it might just be a table.
  */
   if (!strcmp(make,"Nokia")) return;
-  fread (buf, 1, 10, ifp);
+  size_t bcount = fread (buf, 1, 10, ifp);
   if (!strncmp (buf,"KDK" ,3) ||	/* these aren't TIFF tables */
       !strncmp (buf,"VER" ,3) ||
       !strncmp (buf,"IIII",4) ||
