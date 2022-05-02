@@ -13,6 +13,8 @@ import * as thumbApi from "./routes/thumb";
 
 import * as metadataApi from "./routes/metadata";
 
+import userConfig from '../users_config.json';
+
 // if no .env file found then no need to go further
 try {
     fs.statSync('.env');
@@ -65,20 +67,33 @@ const userManager = new webdav.SimpleUserManager();
 // add user manager to locals to retreive it from routes
 app.locals.userManager = userManager;
 
-// configure users for app
-console.log('Creating DAV user : ' + process.env.DAV_USER);
-
-const user = userManager.addUser(process.env.DAV_USER, process.env.DAV_PASSWORD, false);
-const adminUser = userManager.addUser(process.env.DAV_ADMIN_USER, process.env.DAV_ADMIN_PASSWORD, true);
-
 // Privilege manager (tells which users can access which files/folders)
 const privilegeManager = new webdav.SimplePathPrivilegeManager();
 
 // add privilege manager to locals to retreive it from routes
 app.locals.privilegeManager = privilegeManager;
 
-// configure privileges
-privilegeManager.setRights(user, process.env.DAV_MAPPED_PATH, ['all']);
+console.log('User config is:');
+console.log(JSON.stringify(userConfig));
+
+userConfig.users.forEach(user => {
+
+    console.log(`Configuring... ${JSON.stringify(user)}`);
+
+    // configure users for app
+    console.log('Creating DAV user : ' + user.username);
+
+    const managedUser = userManager.addUser(user.username, user.password, false);
+
+    // configure privileges for the root directories mapped names of that user. 
+    user.rootDirectories.forEach(rootDir => {
+        const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
+        privilegeManager.setRights(managedUser, rootDirName, ['all']);
+    });
+});
+
+// admin user config
+const adminUser = userManager.addUser(process.env.DAV_ADMIN_USER, process.env.DAV_ADMIN_PASSWORD, true);
 privilegeManager.setRights(adminUser, '/', ['all']);
 
 // now configure additional features routes
@@ -110,22 +125,33 @@ server.afterRequest((arg, next) => {
     next();
 });
 
-const localPhysicalPath = process.env.DAV_PHYSICAL_PATH;
-try {
-    fs.statSync(process.env.DAV_PHYSICAL_PATH);
-} catch (problem) {
-    console.log('Check the .env configuration file and ensure that the DAV_PHYSICAL_PATH exists and is readable.');
-    process.exit(-79);
-}
-server.setFileSystem(process.env.DAV_MAPPED_PATH, new webdav.PhysicalFileSystem(localPhysicalPath), (success) => {
-    if (success) {
-        console.log(`Successfully loaded the physical path:  ${localPhysicalPath} into mapped path as: ${process.env.DAV_MAPPED_PATH}`);
-    } else {
-        const errMsg = `Cannot map physical path: ${localPhysicalPath} into: ${process.env.DAV_MAPPED_PATH}`
-        console.log(errMsg);
-        throw new Error(errMsg);
-    }
+
+// configure physical path mapping for the root directories of all users.
+// the user's root directories are mounted under the user name as root for all directories.
+userConfig.users.forEach(user => {
+
+    user.rootDirectories.forEach(rootDir => {
+        try {
+            fs.statSync(rootDir.physicalPath);
+
+            const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
+
+            server.setFileSystem(rootDirName, new webdav.PhysicalFileSystem(rootDir.physicalPath), (success) => {
+                if (success) {
+                    console.log(`User directory mounted: ${rootDirName} -> ${rootDir.physicalPath}`);
+                } else {
+                    const errMsg = `Cannot map physical path: ${rootDir.physicalPath} into: ${rootDirName}`;
+                    console.log(errMsg);
+                    throw new Error(errMsg);
+                }
+            });
+        } catch (problem) {
+            console.log(`Check the users_config.json configuration file and ensure that the physical path exists and is readable: ${rootDir.physicalPath}`);
+        }
+    });
+
 });
+
 
 // activate webdav server as an expressjs handler
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));

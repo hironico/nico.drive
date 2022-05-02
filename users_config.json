@@ -1,0 +1,20 @@
+{
+    "users": [
+        {
+            "username": "hironico",
+            "password": "hironico",
+            "rootDirectories": [
+                {
+                    "name": "/home",
+                    "physicalPath": "/home/hironico",
+                    "roles": [ "user", "admin" ]
+                },
+                {
+                    "name": "/share",
+                    "physicalPath": "/usr/share",
+                    "roles": [ "user"]
+                }
+            ]
+        }
+    ]
+}
