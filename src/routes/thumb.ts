@@ -4,6 +4,7 @@ import fs from "fs";
 import child_process, { SpawnSyncOptions } from 'child_process';
 
 import sharp from "sharp";
+import findPhysicalPath from "../lib/auth";
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
@@ -85,7 +86,9 @@ export const register = (app: express.Application) : void => {
 
     app.post('/thumb', (req, res) => {
 
-        const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+        const homeDirPhysicalPath = findPhysicalPath(req.body.username, req.body.homeDir);
+
+        const fullFilename = `${homeDirPhysicalPath}/${req.body.filename}`;
 
         if (!fs.existsSync(fullFilename)) {
             const errMsg = `${fullFilename} is not found on this server.`;

@@ -2,6 +2,7 @@ import * as express from "express";
 import bodyParser from "body-parser";
 import { OptionsJson } from "body-parser";
 import {ExifImage, ExifData} from "exif";
+import findPhysicalPath from "../lib/auth";
 import XMPLoader from "../lib/xmp";
 
 export const register = (app: express.Application) : void => {
@@ -21,7 +22,8 @@ export const register = (app: express.Application) : void => {
             return;
         }
 
-        const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+        const physicalHomeDir = findPhysicalPath(req.body.username, req.body.homeDir);
+        const fullFilename = `${physicalHomeDir}/${filename}`;
 
         if (filename.toLowerCase().endsWith('.jpg')) {
             // load exif data if any in this jpg file.
@@ -54,7 +56,8 @@ export const register = (app: express.Application) : void => {
             return;
         }
 
-        const fullFilename = `${process.env.DAV_PHYSICAL_PATH}/${req.body.filename}`;
+        const physicalHomeDir = findPhysicalPath(req.body.username, req.body.homeDir);
+        const fullFilename = `${physicalHomeDir}/${filename}`;
 
         console.log(`Loading XMP info from file: ${fullFilename}...`);
 
