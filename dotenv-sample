@@ -31,27 +31,31 @@ SERVER_SSL_CERT_FILE=server.cert
 SERVER_SSL_ENABLED=true
 
 #
-# web dav setup : tell where is your local directory and how to name it in the url.
-# The web context is the root path of the url to distinguish the webdav server 
-# from the other servers you may have on your machine/server. this will enable to have
-# another web dav server under either a different web context and/or user on the same computer!
-# user name and password to access the webdav 
+# DAV Web Context defines the root path in server's url responding to WebDav requests.
+# for instance: "/dav" will expose dav endpoints as https://yourdomain.net/dav
 #
-# For instance: https://youserver.com/dav/ateam will serve the /path/to/local/data folder
-# only accessible for creadentials of hannibalsmith
-#
-DAV_PHYSICAL_PATH=/path/to/local/data/
-DAV_MAPPED_PATH=/ateam
 DAV_WEB_CONTEXT=/dav
-DAV_USER=hannibalsmith
-DAV_PASSWORD=Sup3rS3cr3tP@ssw0rd
+
+#
+# User access configuration :
+# Each user has a login/password, and a set of roles:
+# - user  : required to be allowed to connect
+# - admin : optional. If set, then the user can manage others users
+# Each user is associated to a set of rootDirectories where it can store files into.
+# each root directory is mapped to a physical path on the server where files are stored
+# A user can have access to more than one root directory mapped into different names.
+# The url to access root directories for a user is of the form:
+# https::/youdomain.net/{DAV_WEB_CONTEXT}/{USER_LOGIN}/
+#
+# Below is the name of the users configuration file
+DAV_USERS_CONFIG=./users_config.json
 
 #
 # Nico's drive server comes with its client embedded.
 # but you can specify another directory containing anything you like
 # to be accessible at the web root of the server. for instance at https://yourdomain.com/
 #
-CLIENT_ROOT_DIR=./client
+CLIENT_ROOT_DIR=../client
 
 #
 # Support for digital camera raw files.
