@@ -8,7 +8,7 @@ import findPhysicalPath from "../lib/auth";
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
-const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'DNG'];
+const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG'];
 
 const getFileExtention = (filename: string): string => {
     if (typeof filename === 'undefined' || filename === null) {
@@ -32,8 +32,9 @@ const isRawFile = (filename: string): boolean => {
     if (extention === null) {
         return false;
     }
-
-    return 'CR2' === extention;
+    
+    let regexp = new RegExp(/CR[0-9]/);
+    return regexp.test(extention);
 }
 
 const fileSupported = (filename: string): boolean => {
@@ -108,18 +109,22 @@ export const register = (app: express.Application) : void => {
 
         let dataBuffer: Buffer = null;
         if (isRawFile(fullFilename)) {
-            const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : `./tools/dcraw`;
+            const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : `./tools/dcraw_emu`;
             if (!fs.existsSync(dcrawPath)) {
                 const msg = `dcraw program not found as ${dcrawPath}. Skipping thumb generation for RAW image file.`;
                 console.log(msg);
                 res.status(400).send(msg).end();
                 return;
             }
+
+            process.env.LD_LIBRARY_PATH = './tools/.';
+
             const options: SpawnSyncOptions = {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                maxBuffer: 1024 * 1024 * 1024 // ONE GIGA BYTES
+                maxBuffer: 1024 * 1024 * 1024, // ONE GIGA BYTES
+                env: process.env
             }
-            const dcraw = child_process.spawn(dcrawPath, [ '-T', '+M', '-o', '2', '-h', '-c', fullFilename], options);
+            const dcraw = child_process.spawn(dcrawPath, [ "-T", "+M", "-o", "2", "-h", "-Z", "-", fullFilename], options);
             let stdErr = '';
             dcraw.stdout.on('data', (data) => {
                 dataBuffer = dataBuffer == null ? Buffer.from(data) : Buffer.concat([dataBuffer, Buffer.from(data)]);
