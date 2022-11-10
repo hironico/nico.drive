@@ -45,5 +45,6 @@ code, libraries used etc...
 * After that we needed configuration options: [so we use the dotEnv project](https://developer.okta.com/blog/2018/11/15/node-express-typescript#a-better-way-to-manage-configuration-settings-in-nodejs)
 * Created the azure-pipelines.yml to get continuous integration from Azure DevOps
 * Thumbnail library is [SHARP](https://www.npmjs.com/package/sharp)
-* Digital Camera RAW file support added via dcraw : https://www.dechifro.org/dcraw/
+* Original Digital Camera RAW file support from dcraw : https://www.dechifro.org/dcraw/
+* Advanced Digital Camera RAW file support provided via [LibRaw](https://github.com/LibRaw/LibRaw/)
 
