@@ -7,16 +7,10 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "NicoDrive Server",
-            "program": "${workspaceFolder}/nicodriveserver",
-        },
-        {
-            "type": "node",
-            "request": "attach",
-            "name": "Debug NicoDrive Server",
-            "processId": "${command:PickProcess}",
-            "restart": true,
-            "protocol": "inspector"
-        }
+            "name": "Debug Server",
+            "program": "${workspaceFolder}/src/index.ts",
+            "preLaunchTask": "tsc: build - tsconfig.json",
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+          }
     ]
 }
