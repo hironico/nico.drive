@@ -64,6 +64,7 @@ CLIENT_ROOT_DIR=../client
 # dcraw_emu comes from the LibRaw project which support a vast variety of digital camera RAW formats.
 #
 DCRAW_PATH=./tools/dcraw_emu
+THUMBS_REPOSITORY_PATH=/tmp/nicodrive/thumbs
 
 #
 # Misc and debug config

@@ -1,6 +1,7 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import fs from "fs";
+import util from 'util';
 import child_process, { SpawnSyncOptions } from 'child_process';
 
 import sharp from "sharp";
@@ -47,35 +48,170 @@ const fileSupported = (filename: string): boolean => {
     return formatIndex !== -1;
 }
 
-/**
- * Generate a thumbnail image from the full image data in the provided data buffer according to the requested
- * parameters contained in the request body. Then sends this thumbnail back to the response.
- * @param req Request containing the thumb generation parameters
- * @param res Response to send the thumbnail image to
- * @param dataBuffer the databuffer read from the requested file
- */
-const generateThumb = (req: express.Request, res: express.Response, dataBuffer: Buffer) => {
-    const width = req.body.width ? req.body.width : 200;
-    const height = req.body.heigh ? req.body.height : 200;
-    sharp(dataBuffer)
+const writeCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
+    sharp(req.body.dataBuffer)
         .resize({
-          width: width,
-          height: height,
+          width: req.body.width,
+          height: req.body.height,
           fit: sharp.fit.cover,
           position: sharp.strategy.entropy
         }).jpeg()
         .toBuffer()            
             .then(data => {
-                // TODO put data to server cache 
-                res.set({
-                    'Content-Type': 'image/jpeg',
-                    'cache-control': 'max-age=0'
-                });
-                res.status(200).end(data, 'binary');
+                // console.log(`Writing cached thumb to: ${req.body.cachedFilename}`);
+                fs.writeFileSync(req.body.cachedFilename, data);
+
+                req.body.dataBuffer = data;
+                next();                
             })
             .catch(reason => {
+                console.log(`Error while writing the thumb jpeg cahced file to disk: ${reason}`);
                 res.status(500).send(reason).end();
             });
+}
+
+const sendCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!req.body.dataBuffer) {
+        res.status(500).send('There should be a data buffer for the thumbnail at this point.').end();
+        return;
+    }
+
+    res.set({
+        'Content-Type': 'image/jpeg',
+        'cache-control': 'max-age=0'
+    });
+
+    res.status(200).end(req.body.dataBuffer, 'binary');
+}
+
+const generateMD5 = (fullFilename: String) : String => {
+    const out = child_process.execFileSync('/usr/bin/env', ['openssl', 'dgst', '-md5', fullFilename.toString()]);
+    const md5 = out.toString().split('=')[1].trim();
+    // console.log(`Generated MD5 for ${fullFilename} is ${md5}`);
+    return md5.toString();
+}
+
+const readCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const md5 = generateMD5(req.body.fullFilename);
+
+    if (!fs.existsSync(process.env.THUMBS_REPOSITORY_PATH)) {
+        console.log(`Creating thumbs directory path: ${process.env.THUMBS_REPOSITORY_PATH}`);
+        fs.mkdirSync(process.env.THUMBS_REPOSITORY_PATH, { recursive: true });
+    }
+
+    const cachedFilename = `${process.env.THUMBS_REPOSITORY_PATH}/${md5}_${req.body.width}x${req.body.height}`;
+    req.body['cachedFilename'] = cachedFilename;
+
+    if (!fs.existsSync(cachedFilename)) {
+        next();
+        return;
+    }
+
+    const stat = fs.statSync(cachedFilename);
+
+    res.set({
+        'Content-Type': 'image/jpeg',
+        'Content-Size': stat.size,
+        'cache-control': 'max-age=0'
+    });
+
+    // see the punmp pattern here :
+    // https://elegantcode.com/2011/04/06/taking-baby-steps-with-node-js-pumping-data-between-streams/
+    const readStream = fs.createReadStream(cachedFilename);
+    readStream.on('data', function(data) {
+        var flushed = res.write(data);
+        // Pause the read stream when the write stream gets saturated
+        if(!flushed) {
+            readStream.pause()
+        }
+    });
+    
+    res.on('drain', function() {
+        // Resume the read stream when the write stream gets hungry 
+        readStream.resume();    
+    });
+    
+    readStream.on('end', function() {
+        res.end();        
+    });
+}
+
+/**
+ * Check parameters middleware that will abort if something wrong. Then forward to next function if all ok.
+ * @param req the thhp request
+ * @param res the http response
+ * @param next  the next function (most probably the thumb caching handlier)
+  */
+const thumbCheckParams = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const homeDirPhysicalPath = findPhysicalPath(req.body.username, req.body.homeDir);
+
+    const fullFilename = `${homeDirPhysicalPath}/${req.body.filename}`;
+    const width = req.body.width ? req.body.width : 200;
+    const height = req.body.heigh ? req.body.height : 200;
+
+    if (!fs.existsSync(fullFilename)) {
+        const errMsg = `${fullFilename} is not found on this server.`;
+        console.log(errMsg);
+        res.status(404).send(errMsg).end();
+        return;
+    }
+
+    // check we support this image (if it is one)
+    if (!fileSupported(fullFilename)) {
+        console.error(`${req.body.filename} is not a supported file format.`);
+        res.status(400).send(`${req.body.filename} is not a supported file format.`).end();
+        return;
+    }
+
+    req.body['fullFilename'] = fullFilename;
+    req.body['width'] = width;
+    req.body['height'] = height;
+
+    next();
+}
+
+const generateRawThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    let dataBuffer: Buffer = null;
+    if (isRawFile(req.body.fullFilename)) {
+        const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : `./tools/dcraw_emu`;
+        if (!fs.existsSync(dcrawPath)) {
+            const msg = `dcraw program not found as ${dcrawPath}. Skipping thumb generation for RAW image file.`;
+            console.log(msg);
+            res.status(400).send(msg).end();
+            return;
+        }
+
+        process.env.LD_LIBRARY_PATH = './tools/.';
+
+        const options: SpawnSyncOptions = {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            maxBuffer: 1024 * 1024 * 1024, // ONE GIGA BYTES
+            env: process.env
+        }
+        const dcraw = child_process.spawn(dcrawPath, [ "-T", "+M", "-o", "2", "-h", "-Z", "-", req.body.fullFilename], options);
+        let stdErr = '';
+        dcraw.stdout.on('data', (data) => {
+            dataBuffer = dataBuffer == null ? Buffer.from(data) : Buffer.concat([dataBuffer, Buffer.from(data)]);
+        });
+        dcraw.stderr.on('data', (data) => {
+            stdErr += data.toString();
+        });
+        dcraw.on('close', (exitCode) => {
+            if (exitCode !== 0) {
+                const errMsg = `Error while generating raw file thumb image: ${stdErr}`;
+                console.error(errMsg);
+                res.status(500).send(errMsg).end();
+                return;
+            } else {
+                req.body['dataBuffer'] = dataBuffer;
+                next();
+            }
+        });
+    } else {
+        dataBuffer = fs.readFileSync(req.body.fullFilename);
+        req.body['dataBuffer'] = dataBuffer;
+        next();
+    }
 }
 
 export const register = (app: express.Application) : void => {
@@ -85,66 +221,9 @@ export const register = (app: express.Application) : void => {
     app.use('/thumb', bodyParser.urlencoded({ extended: false }));
     app.use('/thumb', bodyParser.json({ type: 'application/json' }));
 
-    app.post('/thumb', (req, res) => {
-
-        const homeDirPhysicalPath = findPhysicalPath(req.body.username, req.body.homeDir);
-
-        const fullFilename = `${homeDirPhysicalPath}/${req.body.filename}`;
-
-        if (!fs.existsSync(fullFilename)) {
-            const errMsg = `${fullFilename} is not found on this server.`;
-            console.log(errMsg);
-            res.status(404).send(errMsg).end();
-            return;
-        }
-
-        // check we support this image (if it is one)
-        if (!fileSupported(fullFilename)) {
-            console.error(`${req.body.filename} is not a supported file format.`);
-            res.status(400).send(`${req.body.filename} is not a supported file format.`).end();
-            return;
-        }
-        
-        //TODO use cache ?
-
-        let dataBuffer: Buffer = null;
-        if (isRawFile(fullFilename)) {
-            const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : `./tools/dcraw_emu`;
-            if (!fs.existsSync(dcrawPath)) {
-                const msg = `dcraw program not found as ${dcrawPath}. Skipping thumb generation for RAW image file.`;
-                console.log(msg);
-                res.status(400).send(msg).end();
-                return;
-            }
-
-            process.env.LD_LIBRARY_PATH = './tools/.';
-
-            const options: SpawnSyncOptions = {
-                stdio: ['pipe', 'pipe', 'pipe'],
-                maxBuffer: 1024 * 1024 * 1024, // ONE GIGA BYTES
-                env: process.env
-            }
-            const dcraw = child_process.spawn(dcrawPath, [ "-T", "+M", "-o", "2", "-h", "-Z", "-", fullFilename], options);
-            let stdErr = '';
-            dcraw.stdout.on('data', (data) => {
-                dataBuffer = dataBuffer == null ? Buffer.from(data) : Buffer.concat([dataBuffer, Buffer.from(data)]);
-            });
-            dcraw.stderr.on('data', (data) => {
-                stdErr += data.toString();
-            });
-            dcraw.on('close', (exitCode) => {
-                if (exitCode !== 0) {
-                    const errMsg = `Error while generating raw file thumb image: ${stdErr}`;
-                    console.error(errMsg);
-                    res.status(500).send(errMsg).end();
-                    return;
-                } else {
-                    generateThumb(req, res, dataBuffer);
-                }
-            });
-        } else {
-            dataBuffer = fs.readFileSync(fullFilename);
-            generateThumb(req, res, dataBuffer);
-        }
-    });
+    app.post('/thumb', thumbCheckParams);
+    app.post('/thumb', readCachedThumb);
+    app.post('/thumb', generateRawThumb);
+    app.post('/thumb', writeCachedThumb);
+    app.post('/thumb', sendCachedThumb);
 };
