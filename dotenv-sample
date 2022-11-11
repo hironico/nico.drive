@@ -60,17 +60,17 @@ CLIENT_ROOT_DIR=../client
 #
 # Support for digital camera raw files.
 # Tell where to find dcraw utility program.
-# default value is ./tools/dcraw 
-# you can build the dcraw binary from source in the ./tools/ directory.
+# default value is ./tools/dcraw_emu 
+# dcraw_emu comes from the LibRaw project which support a vast variety of digital camera RAW formats.
 #
-DCRAW_PATH=./tools/dcraw
+DCRAW_PATH=./tools/dcraw_emu
 
 #
 # Misc and debug config
 #
 
 # Request debug set to 1 for logging after Request information
-LOG_AFTER_REQUEST=1
+LOG_AFTER_REQUEST=0
 
 # Set to production when deploying to production
 NODE_ENV=development
