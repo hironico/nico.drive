@@ -1,7 +1,8 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import fs from "fs";
-import util from 'util';
+import fspromise from "fs/promises";
+
 import child_process, { SpawnSyncOptions } from 'child_process';
 
 import sharp from "sharp";
@@ -59,10 +60,12 @@ const writeCachedThumb = (req: express.Request, res: express.Response, next: exp
         .toBuffer()            
             .then(data => {
                 // console.log(`Writing cached thumb to: ${req.body.cachedFilename}`);
-                fs.writeFileSync(req.body.cachedFilename, data);
 
-                req.body.dataBuffer = data;
-                next();                
+                fspromise.writeFile(req.body.cachedFilename, data)
+                .then( () => {
+                    req.body.dataBuffer = data;
+                    next();
+                });
             })
             .catch(reason => {
                 console.log(`Error while writing the thumb jpeg cahced file to disk: ${reason}`);
@@ -84,22 +87,28 @@ const sendCachedThumb = (req: express.Request, res: express.Response, next: expr
     res.status(200).end(req.body.dataBuffer, 'binary');
 }
 
-const generateMD5 = (fullFilename: String) : String => {
-    const out = child_process.execFileSync('/usr/bin/env', ['openssl', 'dgst', '-md5', fullFilename.toString()]);
-    const md5 = out.toString().split('=')[1].trim();
-    // console.log(`Generated MD5 for ${fullFilename} is ${md5}`);
-    return md5.toString();
+const generateMD5 = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
+    child_process.execFile('/usr/bin/env', ['openssl', 'dgst', '-md5', req.body.fullFilename.toString()], (error: any, stdout: String, stderr: String) => {
+        if (error) {
+            const errMsg = `Cannot generate MD5 for file: ${req.body.fullFilename}.\n${stderr}`;
+            console.error(errMsg);
+            res.status(500).send(errMsg).end();
+            return;
+        }
+
+        const md5 = stdout.toString().split('=')[1].trim();
+        req.body['md5'] = md5;
+        next();
+    });
 }
 
 const readCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const md5 = generateMD5(req.body.fullFilename);
-
     if (!fs.existsSync(process.env.THUMBS_REPOSITORY_PATH)) {
         console.log(`Creating thumbs directory path: ${process.env.THUMBS_REPOSITORY_PATH}`);
         fs.mkdirSync(process.env.THUMBS_REPOSITORY_PATH, { recursive: true });
     }
 
-    const cachedFilename = `${process.env.THUMBS_REPOSITORY_PATH}/${md5}_${req.body.width}x${req.body.height}`;
+    const cachedFilename = `${process.env.THUMBS_REPOSITORY_PATH}/${req.body.md5}_${req.body.width}x${req.body.height}`;
     req.body['cachedFilename'] = cachedFilename;
 
     if (!fs.existsSync(cachedFilename)) {
@@ -222,6 +231,7 @@ export const register = (app: express.Application) : void => {
     app.use('/thumb', bodyParser.json({ type: 'application/json' }));
 
     app.post('/thumb', thumbCheckParams);
+    app.post('/thumb', generateMD5);
     app.post('/thumb', readCachedThumb);
     app.post('/thumb', generateRawThumb);
     app.post('/thumb', writeCachedThumb);
