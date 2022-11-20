@@ -25,8 +25,6 @@ class UserProfile {
     }
 }
 
-
-
 export const register = (app: express.Application) : void => {
 
     const userManager = app.locals.userManager;

@@ -3,10 +3,11 @@ import bodyParser from "body-parser";
 import fs from "fs";
 import fspromise from "fs/promises";
 
-import child_process, { SpawnSyncOptions } from 'child_process';
+import child_process, { ExecException, SpawnSyncOptions } from 'child_process';
 
 import sharp from "sharp";
-import findPhysicalPath from "../lib/auth";
+import { findPhysicalPath, basicAuthHandler } from "../lib/auth";
+import expressBasicAuth from "express-basic-auth";
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
@@ -35,7 +36,7 @@ const isRawFile = (filename: string): boolean => {
         return false;
     }
     
-    let regexp = new RegExp(/CR[0-9]/);
+    const regexp = new RegExp(/CR[0-9]/);
     return regexp.test(extention);
 }
 
@@ -73,7 +74,7 @@ const writeCachedThumb = (req: express.Request, res: express.Response, next: exp
             });
 }
 
-const sendCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const sendCachedThumb = (req: express.Request, res: express.Response) => {
     if (!req.body.dataBuffer) {
         res.status(500).send('There should be a data buffer for the thumbnail at this point.').end();
         return;
@@ -88,7 +89,7 @@ const sendCachedThumb = (req: express.Request, res: express.Response, next: expr
 }
 
 const generateMD5 = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
-    child_process.execFile('/usr/bin/env', ['openssl', 'dgst', '-md5', req.body.fullFilename.toString()], (error: any, stdout: String, stderr: String) => {
+    child_process.execFile('/usr/bin/env', ['openssl', 'dgst', '-md5', req.body.fullFilename.toString()], (error: ExecException, stdout: string, stderr: string) => {
         if (error) {
             const errMsg = `Cannot generate MD5 for file: ${req.body.fullFilename}.\n${stderr}`;
             console.error(errMsg);
@@ -128,7 +129,7 @@ const readCachedThumb = (req: express.Request, res: express.Response, next: expr
     // https://elegantcode.com/2011/04/06/taking-baby-steps-with-node-js-pumping-data-between-streams/
     const readStream = fs.createReadStream(cachedFilename);
     readStream.on('data', function(data) {
-        var flushed = res.write(data);
+        const flushed = res.write(data);
         // Pause the read stream when the write stream gets saturated
         if(!flushed) {
             readStream.pause()
@@ -224,6 +225,9 @@ const generateRawThumb = (req: express.Request, res: express.Response, next: exp
 }
 
 export const register = (app: express.Application) : void => {
+
+    // first protect the API using the basic Auth handler
+    app.use('/thumb', expressBasicAuth({ authorizer: basicAuthHandler }));
 
     // configure body parser to accept json only for /thumb/... request paths
     // in order to let the original dav server configuration untouched
