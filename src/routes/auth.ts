@@ -1,4 +1,6 @@
 import * as express from "express";
+import expressBasicAuth from "express-basic-auth";
+import { basicAuthHandler } from "../lib/auth";
 import { IUser } from "webdav-server";
 
 import userConfig from '../../users_config.json';
@@ -28,6 +30,9 @@ class UserProfile {
 export const register = (app: express.Application) : void => {
 
     const userManager = app.locals.userManager;
+
+    // first protect the API using the basic Auth handler
+    app.use('/auth', expressBasicAuth({ authorizer: basicAuthHandler }));
 
     app.get("/auth/whois/:username", (req, res) => {
         const username = req.params['username'];
