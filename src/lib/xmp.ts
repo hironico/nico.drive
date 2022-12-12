@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs, { BaseEncodingOptions } from 'fs';
 import { parseStringPromise } from 'xml2js';
 
 
@@ -6,6 +6,7 @@ export interface XMPElement {[key:string]: any}
 
 class XMPLoader {
     buffer: ArrayBuffer = null;
+    decoder = new TextDecoder();
 
     constructor(source: ArrayBuffer | Uint8Array | string) {
         if (source instanceof ArrayBuffer) {
@@ -17,9 +18,21 @@ class XMPLoader {
         }
     }
 
+    toArrayBuffer(buf: Buffer): ArrayBuffer {
+        const ab = new ArrayBuffer(buf.length);
+        const view = new Uint8Array(ab);
+        for (let i = 0; i < buf.length; ++i) {
+            view[i] = buf[i];
+        }
+        return ab;
+    }
+
     loadFromFile(filename: string): void {
-        const filecontents: Buffer = fs.readFileSync(filename);
-        this.buffer = filecontents.buffer;
+        const options: BaseEncodingOptions = {
+            encoding: "binary"
+        }
+        const contents = fs.readFileSync(filename, null);
+        this.buffer = this.toArrayBuffer(contents);        
     }
 
     find(): string {
@@ -74,12 +87,8 @@ class XMPLoader {
         return result;
     }
 
-    stringFromBuffer(buffer: DataView, start: number, length: number): string {
-        let out = '';
-        for (let i = start; i < start + length; i++) {
-            out += String.fromCharCode(buffer.getUint8(i));
-        }
-        return out;
+    stringFromBuffer(buffer: DataView, start: number, length: number): string {        
+        return this.decoder.decode(buffer.buffer.slice(start, start+length));
     }
 
     getParsedXMP(xmp: XMPElement): Promise<XMPElement> {
@@ -102,9 +111,11 @@ class XMPLoader {
                 }
             });
 
-            const subjectsArray = description['dc:subject'][0]['rdf:Bag'][0]['rdf:li'];
-            // console.log('dc:subject => ' + subjectsArray.join(','));
-            result['tags'] = subjectsArray.join(',');
+            // if tags present in the XMP, then add them into the results
+            if (typeof description['dc:subject'] !== 'undefined' && description['dc:subject'].length > 0) {
+                const subjectsArray = description['dc:subject'][0]['rdf:Bag'][0]['rdf:li'];            
+                result['tags'] = subjectsArray.join(',');
+            }
 
             resolve(result);
         });

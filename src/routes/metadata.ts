@@ -92,27 +92,40 @@ export const register = (app: express.Application) : void => {
             const loader: XMPLoader = new XMPLoader(fullFilename);
             const xmp: string = loader.find();
 
+            res.set({
+                'Content-Type': 'application/json',
+                'cache-control': 'max-age=0'
+            });
+
             if (!xmp) {
-                res.status(404).send('No XMP information found in this file: ' + filename).end();
+                const message = [{
+                    type: 'info',
+                    data: `No XMP information found in this file: ${filename}`
+                }]
+                res.status(404).send(message).end();
                 return;
             }
 
             const promise = loader.parse(xmp, false);
             if (promise === null) {
-                res.status(404).send('No XMP information found in this file: ' + filename).end();
+                const message = {
+                    type: 'info',
+                    data: `No XMP information found in this file: ${filename}`
+                };
+                res.status(404).send(message).end();
                 return;
             }
 
-            res.set({
-                'Content-Type': 'application/json',
-                'cache-control': 'max-age=0'
-            });
             promise.then(parsedData => {
+                    console.log(`XMP parsed data is:\n${parsedData}`);
                     res.status(200).send(JSON.stringify(parsedData));
                 })
                 .catch(error => {
+                    console.log(`Problem while parsing XMP data: ${error}`);
                     res.status(404).send(JSON.stringify(error)).end();
                 });
+        } else {
+            res.status(200).send('').end();
         }
     });
 }
