@@ -23,7 +23,6 @@ Assuming you have configured your box with a dedicated user ; to run your server
 - COPY the "dotenv-sample" file into a file named ".env", then adapt to reflect your current setup.
 - npm install
 - npm run build
-- If you have digital camera files: npm run dcraw
 - npm run start
 - Connect WebDav client to your new server (follow vendor instructions)
 
