@@ -55,7 +55,7 @@ const writeCachedThumb = (req: express.Request, res: express.Response, next: exp
         .resize({
           width: req.body.width,
           height: req.body.height,
-          fit: sharp.fit.cover,
+          fit: req.body.resizeFit,
           position: sharp.strategy.entropy
         }).jpeg()
         .toBuffer()            
@@ -109,7 +109,7 @@ const readCachedThumb = (req: express.Request, res: express.Response, next: expr
         fs.mkdirSync(process.env.THUMBS_REPOSITORY_PATH, { recursive: true });
     }
 
-    const cachedFilename = `${process.env.THUMBS_REPOSITORY_PATH}/${req.body.md5}_${req.body.width}x${req.body.height}`;
+    const cachedFilename = `${process.env.THUMBS_REPOSITORY_PATH}/${req.body.md5}_${req.body.width}x${req.body.height}-${req.body.resizeFit}`;
     req.body['cachedFilename'] = cachedFilename;
 
     if (!fs.existsSync(cachedFilename)) {
@@ -157,7 +157,8 @@ const thumbCheckParams = (req: express.Request, res: express.Response, next: exp
 
     const fullFilename = `${homeDirPhysicalPath}/${req.body.filename}`;
     const width = req.body.width ? req.body.width : 200;
-    const height = req.body.heigh ? req.body.height : 200;
+    const height = req.body.height ? req.body.height : 200;
+    const resizeFit = req.body.resizeFit ? req.body.resizeFit : sharp.fit.cover;
 
     if (!fs.existsSync(fullFilename)) {
         const errMsg = `${fullFilename} is not found on this server.`;
@@ -173,9 +174,26 @@ const thumbCheckParams = (req: express.Request, res: express.Response, next: exp
         return;
     }
 
+    // resizeFit is correct
+    switch(resizeFit) {
+        case 'cover':
+        case 'contain':
+        case 'fill':
+        case 'outside':
+        case 'inside':
+            break;
+
+        default:
+            const errorMsg = `${req.body.resizeFit} is not a supported resize fit value. Should be: cover, contain, fill, outside, inside.`;
+            console.error(errorMsg);
+            res.status(400).send(errorMsg).end();
+            return;
+    }
+
     req.body['fullFilename'] = fullFilename;
     req.body['width'] = width;
     req.body['height'] = height;
+    req.body['resizeFit'] = resizeFit;
 
     next();
 }
