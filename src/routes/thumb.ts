@@ -184,9 +184,8 @@ const thumbCheckParams = (req: express.Request, res: express.Response, next: exp
             break;
 
         default:
-            const errorMsg = `${req.body.resizeFit} is not a supported resize fit value. Should be: cover, contain, fill, outside, inside.`;
-            console.error(errorMsg);
-            res.status(400).send(errorMsg).end();
+            console.error(`${req.body.resizeFit} is not a supported resize fit value. Should be: cover, contain, fill, outside, inside.`);
+            res.status(400).send(`${req.body.resizeFit} is not a supported resize fit value. Should be: cover, contain, fill, outside, inside.`).end();
             return;
     }
 
