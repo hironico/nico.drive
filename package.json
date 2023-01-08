@@ -1,7 +1,7 @@
 {
   "name": "nico.drive",
   "version": "7.6.2",
-  "description": "WebDav Server and cool user interface for web and mobile.",
+  "description": "WebDav Server with cool user interface for web and mobile.",
   "main": "dist/src/index.js",
   "scripts": {
     "prebuild": "eslint --fix src/**",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://hironico.visualstudio.com/DefaultCollection/nico.drive/_git/nico.drive"
+    "url": "https://github.com/hironico/nico.drive.git"
   },
   "keywords": [
     "webdav",
@@ -47,7 +47,7 @@
     "@typescript-eslint/eslint-plugin": "^4.6.1",
     "@typescript-eslint/parser": "^4.6.1",
     "eslint": "^7.32.0",
-    "nodemon": "^2.0.13",
+    "nodemon": "^2.0.20",
     "typescript": "^4.0.5"
   }
 }
