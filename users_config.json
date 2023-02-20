@@ -6,13 +6,8 @@
             "rootDirectories": [
                 {
                     "name": "/home",
-                    "physicalPath": "/home/hironico",
+                    "physicalPath": "C:/Users/nramo",
                     "roles": [ "user", "admin" ]
-                },
-                {
-                    "name": "/share",
-                    "physicalPath": "/usr/share",
-                    "roles": [ "user"]
                 }
             ]
         }
