@@ -17,3 +17,5 @@ tools/dcraw
 cert.pem
 
 key.pem
+
+users_config.json

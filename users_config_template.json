@@ -1,0 +1,15 @@
+{
+    "users": [
+        {
+            "username": "hironico",
+            "password": "hironico",
+            "rootDirectories": [
+                {
+                    "name": "/home",
+                    "physicalPath": "C:/Users/nramo",
+                    "roles": [ "user", "admin" ]
+                }
+            ]
+        }
+    ]
+}
