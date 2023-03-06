@@ -9,6 +9,8 @@ import sharp from "sharp";
 import { findPhysicalPath, basicAuthHandler } from "../lib/auth";
 import expressBasicAuth from "express-basic-auth";
 
+import md5 from "../lib/md5";
+
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
 const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG'];
@@ -60,8 +62,6 @@ const writeCachedThumb = (req: express.Request, res: express.Response, next: exp
         }).jpeg()
         .toBuffer()            
             .then(data => {
-                // console.log(`Writing cached thumb to: ${req.body.cachedFilename}`);
-
                 fspromise.writeFile(req.body.cachedFilename, data)
                 .then( () => {
                     req.body.dataBuffer = data;
@@ -88,18 +88,16 @@ const sendCachedThumb = (req: express.Request, res: express.Response) => {
     res.status(200).end(req.body.dataBuffer, 'binary');
 }
 
-const generateMD5 = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
-    child_process.execFile('/usr/bin/env', ['openssl', 'dgst', '-md5', req.body.fullFilename.toString()], (error: ExecException, stdout: string, stderr: string) => {
-        if (error) {
-            const errMsg = `Cannot generate MD5 for file: ${req.body.fullFilename}.\n${stderr}`;
-            console.error(errMsg);
-            res.status(500).send(errMsg).end();
-            return;
-        }
-
-        const md5 = stdout.toString().split('=')[1].trim();
-        req.body['md5'] = md5;
+const generateMD5 = (req: express.Request, res: express.Response, next: express.NextFunction) => { 
+    const fileName: string = req.body.fullFilename.toString();  
+    
+    md5(fileName)
+    .then(result => {
+        req.body['md5'] = result;
         next();
+    })
+    .catch(reason => {
+        res.status(500).send(reason).end();
     });
 }
 
