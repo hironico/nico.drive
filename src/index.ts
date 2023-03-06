@@ -113,15 +113,25 @@ const server = new webdav.WebDAVServer({
 // display some logs if required by the configuration.
 const debugAfterRequest = process.env.LOG_AFTER_REQUEST;
 server.afterRequest((arg, next) => {
-    if (debugAfterRequest !== '1') {
-        next();
-        return;
-    }
+    
+    switch (debugAfterRequest) {
+        case '1':
+            // Display the method, the URI, the returned status code and the returned message
+            console.log('>>', arg.request.method, arg.requested.uri, '>', arg.response.statusCode, arg.response.statusMessage);
+            break;
 
-    // Display the method, the URI, the returned status code and the returned message
-    console.log('>>', arg.request.method, arg.requested.uri, '>', arg.response.statusCode, arg.response.statusMessage);
-    // If available, display the body of the response
-    console.log(arg.responseBody ? arg.responseBody : 'no response body');
+        case '2':
+            // Display the method, the URI, the returned status code and the returned message
+            console.log('>>', arg.request.method, arg.requested.uri, '>', arg.response.statusCode, arg.response.statusMessage);   
+            // If available, display the body of the response
+            console.log(arg.responseBody ? arg.responseBody : 'no response body');  
+            break;
+    }
+       
+    if ('PUT' === arg.request.method) {
+        
+    }
+    
     next();
 });
 

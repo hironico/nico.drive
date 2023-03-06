@@ -70,8 +70,11 @@ THUMBS_REPOSITORY_PATH=/tmp/nicodrive/thumbs
 # Misc and debug config
 #
 
-# Request debug set to 1 for logging after Request information
-LOG_AFTER_REQUEST=0
+# Request debug after request has been performed
+# 0 = disabled
+# 1 = simple : method / url / response
+# 2 = details : method / url / response / response body
+LOG_AFTER_REQUEST=1
 
 # Set to production when deploying to production
 NODE_ENV=development
