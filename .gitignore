@@ -19,3 +19,5 @@ cert.pem
 key.pem
 
 users_config.json
+
+tmp/
