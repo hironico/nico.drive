@@ -2,6 +2,9 @@
  * General purpose file utilities
  */
 
+import crypto from 'crypto';
+import { createReadStream as fsCreateReadStream } from "fs";
+
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
 const supportedFormats: string[] = [ 'JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG'];
@@ -42,3 +45,26 @@ export const isFileSupported = (filename: string): boolean => {
     const formatIndex = supportedFormats.indexOf(extention);
     return formatIndex !== -1;
 }
+
+export const md5 = (fileName: string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        try {
+            // créer un objet Hash avec l'algorithme md5
+            const hash = crypto.createHash('md5');
+
+            // créer un stream de lecture à partir du fichier
+            const stream = fsCreateReadStream(fileName);
+
+            // écrire les données du stream dans le hash
+            stream.pipe(hash);
+
+            // quand le stream est terminé, lire le hash md5
+            stream.on('end', function() {
+                const md5 = hash.digest('hex');
+                resolve(md5);
+            });
+        } catch(error) {
+            reject(error);
+        }
+    });
+};

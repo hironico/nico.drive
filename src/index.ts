@@ -14,6 +14,9 @@ import * as thumbApi from "./routes/thumb";
 import * as metadataApi from "./routes/metadata";
 
 import userConfig from '../users_config.json';
+import { afterPUTListener } from "./requestlistener/afterPUTListener";
+import { afterDELETEListener } from "./requestlistener/afterDELETEListener";
+import { afterLogListener } from "./requestlistener/afterLogListener";
 
 // if no .env file found then no need to go further
 try {
@@ -110,31 +113,9 @@ const server = new webdav.WebDAVServer({
     privilegeManager: privilegeManager
 });
 
-// display some logs if required by the configuration.
-const debugAfterRequest = process.env.LOG_AFTER_REQUEST;
-server.afterRequest((arg, next) => {
-    
-    switch (debugAfterRequest) {
-        case '1':
-            // Display the method, the URI, the returned status code and the returned message
-            console.log('>>', arg.request.method, arg.requested.uri, '>', arg.response.statusCode, arg.response.statusMessage);
-            break;
-
-        case '2':
-            // Display the method, the URI, the returned status code and the returned message
-            console.log('>>', arg.request.method, arg.requested.uri, '>', arg.response.statusCode, arg.response.statusMessage);   
-            // If available, display the body of the response
-            console.log(arg.responseBody ? arg.responseBody : 'no response body');  
-            break;
-    }
-       
-    if ('PUT' === arg.request.method) {
-        
-    }
-    
-    next();
-});
-
+server.afterRequest(afterLogListener);
+server.afterRequest(afterPUTListener);
+server.afterRequest(afterDELETEListener);
 
 // configure physical path mapping for the root directories of all users.
 // the user's root directories are mounted under the user name as root for all directories.
@@ -159,9 +140,7 @@ userConfig.users.forEach(user => {
             console.log(`Check the users_config.json configuration file and ensure that the physical path exists and is readable: ${rootDir.physicalPath}`);
         }
     });
-
 });
-
 
 // activate webdav server as an expressjs handler
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
