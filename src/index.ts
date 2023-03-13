@@ -15,7 +15,7 @@ import * as metadataApi from "./routes/metadata";
 
 import userConfig from '../users_config.json';
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
-import { afterDELETEListener } from "./requestlistener/afterDELETEListener";
+import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
 import { afterLogListener } from "./requestlistener/afterLogListener";
 
 // if no .env file found then no need to go further
@@ -113,9 +113,10 @@ const server = new webdav.WebDAVServer({
     privilegeManager: privilegeManager
 });
 
+server.beforeRequest(beforeDELETEListener);
+
 server.afterRequest(afterLogListener);
 server.afterRequest(afterPUTListener);
-server.afterRequest(afterDELETEListener);
 
 // configure physical path mapping for the root directories of all users.
 // the user's root directories are mounted under the user name as root for all directories.

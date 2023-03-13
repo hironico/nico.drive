@@ -54,16 +54,25 @@ export const md5 = (fileName: string): Promise<string> => {
 
             // créer un stream de lecture à partir du fichier
             const stream = fsCreateReadStream(fileName);
+            if (stream === null || typeof stream === 'undefined') {
+                reject(`Cannot read file for md5 compute: ${fileName}`);
+                return;
+            }
 
             // écrire les données du stream dans le hash
             stream.pipe(hash);
 
             // quand le stream est terminé, lire le hash md5
             stream.on('end', function() {
-                const md5 = hash.digest('hex');
-                resolve(md5);
+                try {
+                    const md5 = hash.digest('hex');
+                    resolve(md5);
+                } catch(error) { 
+                    reject(error) 
+                };
             });
         } catch(error) {
+            console.log(`Cannot compute md5`);
             reject(error);
         }
     });
