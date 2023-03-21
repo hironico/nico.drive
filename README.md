@@ -36,6 +36,14 @@ The following is developper instructions about the way Nico's Drive has been bui
 Is contains various links where the author found instructions on how to setup teh development environment,
 code, libraries used etc...
 
+### Build issues (and their solutions)
+
+* Namespace 'serveStatic' has no exported member 'RequestHandlerConstructor
+  See : https://github.com/DefinitelyTyped/DefinitelyTyped/issues/49595
+  Run th efollowing commands to solve: 
+  - npm update @types/express-serve-static-core --depth 2
+  - npm update @types/serve-static --depth 2
+
 ### Full documentation reference (educational)
 
 * In order to setup the project we used a slightly updated version of the tutorial available here at [okta](https://developer.okta.com/blog/2018/11/15/node-express-typescript)
