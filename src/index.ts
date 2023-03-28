@@ -138,7 +138,7 @@ userConfig.users.forEach(user => {
                 }
             });
         } catch (problem) {
-            console.log(`Check the users_config.json configuration file and ensure that the physical path exists and is readable: ${rootDir.physicalPath}`);
+            console.error(`ERROR: Configuration problem: Check the users_config.json configuration file and ensure that the physical path exists and is readable: ${rootDir.physicalPath}`);
         }
     });
 });
