@@ -18,15 +18,12 @@ export const afterPUTListener: RequestListener = (arg, next) => {
         const relativeFileName = pathElements.join('/');
         const homeDirPhysicalPath = findPhysicalPath(username, homeDirName);
         const fullFilename = decodeURIComponent(decodeURI(`${homeDirPhysicalPath}/${relativeFileName}`));
-        const width = 200;
-        const height = 200;
         const resizeFit = 'cover';    
         if (isFileSupported(fullFilename)) {
-            generateAndSaveThumb(fullFilename, width, height, resizeFit)
-            .then(outputInfo => {
-                console.log('>>>> Thumb created success fully after upload with format: ' + outputInfo.format);
-            }).catch(error => {
-                console.error(`>>>>>> ERROR: Cannot generate thumb for ${fullFilename}.\n${error}`);
+            generateAndSaveThumb(fullFilename, 200, 200, resizeFit)
+            .then(outputFileName => generateAndSaveThumb(fullFilename, 60, 60, resizeFit))
+            .catch(error => {
+                console.warn(`>>>>>> WARNING: Cannot generate thumb for ${fullFilename}.\n${JSON.stringify(error)}`);
             });
         } 
     }

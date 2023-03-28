@@ -127,13 +127,18 @@ const thumbCheckParams = (req: express.Request, res: express.Response, next: exp
 const generateThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
     generateAndSaveThumb(req.body.fullFilename, Number.parseInt(req.body.width), Number.parseInt(req.body.height), req.body.resizeFit)
     .then(outputInfo => {
-        console.log(`Thumb for ${req.body.fullFilename} has been dynamically generated with format: ${outputInfo.format}.`);
+        console.log(`Thumb for ${req.body.fullFilename} has been dynamically generated: ${outputInfo}`);
         next();
     }).catch(error => {
-        const errMsg = `Cannot generate thumb for file: ${req.body.fullFilename}.\n${error}`;
-        console.error(errMsg);
-        res.status(500).send(errMsg).end();
-    })
+        if (error.reason === 'LOCKED') {
+            console.log(error.message);
+            res.status(202).send(error.message).end();
+        } else {
+            const errMsg = `Cannot generate thumb for file: ${req.body.fullFilename}.\n${error}`;
+            console.error(errMsg);
+            res.status(500).send(errMsg).end();
+        }        
+    });
 }
 
 export const register = (app: express.Application) : void => {

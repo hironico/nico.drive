@@ -4,9 +4,9 @@
 
 import sharp, { OutputInfo } from "sharp";
 import fspromise from "fs/promises";
-import { createWriteStream as fsCreateWriteStream } from "fs";
+import { createWriteStream as fsCreateWriteStream, StatOptions, StatSyncOptions, unlinkSync } from "fs";
 import child_process, { SpawnSyncOptions } from 'child_process';
-import { constants } from "fs";
+import { constants, writeFileSync, statSync } from "fs";
 import { isRawFile, md5 } from "./fileutils";
 
 export const getCachedImageFilename = (sourceFilename : string, width: string, height: string, resizeFit: string): Promise<string> => {
@@ -18,21 +18,75 @@ export const getCachedImageFilename = (sourceFilename : string, width: string, h
     }); 
 }
 
-export const generateAndSaveThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum) : Promise<OutputInfo> => {
-   return new Promise<OutputInfo>((resolve, reject) => {
+export const checkThumbLock = (outputFilename:string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {        
+        const lockFilename = `${outputFilename.split('_')[0]}.lock`;
+        const statsOps: StatSyncOptions = {
+            bigint: false,
+            throwIfNoEntry: false
+        }
+        const lockStats = statSync(lockFilename, statsOps);
+        if (typeof lockStats === 'undefined') {
+            console.log(`Putting lock file: ${lockFilename}.`);
+            writeFileSync(lockFilename, `${outputFilename} lock file`);
+            resolve(outputFilename);
+        } else {
+            const error = {
+                reason: 'LOCKED',
+                message: `Lock file for ${outputFilename} already exists !` 
+            }
+            reject(error);
+        }
+    });
+}
+
+export const removeThumbLock = (outputFilename: string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        try {
+            if (outputFilename === void 0 || outputFilename === null) {
+                resolve(null);
+                return;
+            }
+            const lockFilename = `${outputFilename.split('_')[0]}.lock`;
+            const statsOps: StatSyncOptions = {
+                bigint: false,
+                throwIfNoEntry: false
+            }
+            const lockStats = statSync(lockFilename, statsOps);
+            if (typeof lockStats !== 'undefined') {
+                console.log(`Removing lock file: ${lockFilename}`);
+                unlinkSync(lockFilename);
+            }
+
+            resolve(outputFilename);
+        } catch (error) {
+            reject(error);
+        }        
+    });    
+}
+
+export const generateAndSaveThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum): Promise<string> => {
+   return new Promise<string>((resolve, reject) => {
+        var outFilename: string = null;
        getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
        .then(outputFilename => {
-           const promise = isRawFile(input) 
-                           ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename)
-                           : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
-           promise.then(info => resolve(info)).catch(error => reject(error));
+            outFilename = outputFilename;
+            return checkThumbLock(outputFilename);
        })
-       .catch(error => reject(error));
+       .then(outputFilename => generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename))
+       .then(outputFilename => resolve(outputFilename))
+       .catch(error => reject(error))
+       .finally(() => removeThumbLock(outFilename));
    });
 }
 
-export const generateAndSaveImageThumb = (input: string | Buffer, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<OutputInfo> => {
-   return new Promise<OutputInfo>((resolve, reject) => {
+export const generateAndSaveFileThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string): Promise<string> => {
+    return isRawFile(input) ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename) : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
+}
+
+export const generateAndSaveImageThumb = (input: string | Buffer, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<string> => {
+    console.log('Generate and save image thumb from: ' + input + ' to ' + outputFilename);
+   return new Promise<string>((resolve, reject) => {
        try {
            sharp(input)
            .resize({
@@ -44,11 +98,11 @@ export const generateAndSaveImageThumb = (input: string | Buffer, width: number,
            .jpeg()
            .toFile(outputFilename)            
            .then(outputInfo => {
-               resolve(outputInfo);
+               resolve(outputFilename);
            })
            .catch(reason => {
-               const errMsg = `Error while writing the thumb jpeg cahced file to disk: ${reason}`;
-               console.log(errMsg);
+               const errMsg = `Error while writing the thumb jpeg cached file to disk: ${reason}`;
+               console.error(errMsg);
                reject(errMsg);
            });
        } catch (error) {
@@ -57,26 +111,18 @@ export const generateAndSaveImageThumb = (input: string | Buffer, width: number,
    });
 }
 
-export const generateAndSaveRawThumb = (inputFilename: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<OutputInfo> => {
-   return new Promise<OutputInfo>((resolve, reject) => {
+export const generateAndSaveRawThumb = (inputFilename: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<string> => {
+   return new Promise<string>((resolve, reject) => {
        getCachedImageFilename(inputFilename, 'full', 'full', 'none')
-       .then(rawFullThumbFilename => {
-           generateAndSaveImageFromRaw(inputFilename, rawFullThumbFilename)
-           .then(() => {
-               generateAndSaveImageThumb(rawFullThumbFilename, width, height, resizeFit, outputFilename)
-               .then(outputInfo => {
-                   resolve(outputInfo);
-               });        
-           })
-       })
-       .catch(error => {
-           reject(error);
-       });
+       .then(rawFullThumbFilename => generateAndSaveImageFromRaw(inputFilename, rawFullThumbFilename))
+       .then(rawFullThumbFilename => generateAndSaveImageThumb(rawFullThumbFilename, width, height, resizeFit, outputFilename))
+       .then(outputFileName => resolve(outputFilename))
+       .catch(error => reject(error));
    });
 }
 
-export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilename: string) : Promise<void> => {
-   return new Promise<void>((resolve, reject) => {
+export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilename: string) : Promise<string> => {
+   return new Promise<string>((resolve, reject) => {
        if (!isRawFile(inputFilename)) {
            reject(`Cannot generate a raw file thumb from a non raw file: ${inputFilename}`);
            return;
@@ -102,14 +148,14 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
                    console.error(errMsg);
                    reject(errMsg);
                } else {
-                   resolve();
+                   resolve(targetFilename);
                }
 
                writeStream.close();
            });
        }).catch(error => {
            const msg = `dcraw program not found or not executable: ${dcrawPath}. Skipping thumb generation for RAW image file.\n${JSON.stringify(error)}`;
-           console.log(msg);
+           console.error(msg);
            reject(msg);
        });
    });
