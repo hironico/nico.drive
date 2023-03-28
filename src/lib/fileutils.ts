@@ -69,7 +69,7 @@ export const md5 = (fileName: string): Promise<string> => {
                     resolve(md5);
                 } catch(error) { 
                     reject(error) 
-                };
+                }
             });
         } catch(error) {
             console.log(`Cannot compute md5`);
