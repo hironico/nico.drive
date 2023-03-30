@@ -30,6 +30,30 @@ Assuming you have configured your box with a dedicated user ; to run your server
   
   Point you browser at the root url of your server (see .env file for setup)
 
+## Configuration options
+The configuration is splitted into two parts: 
+- server config : network ports, certificates ...
+- user config : user access and root directories for each user
+
+Each configuration has examples in a dedicated sample file that can be customized. See below.
+
+### Server config
+COPY the dotenv.sample file to create a file named '.env' (dot env litterally).
+
+IMPORTANT: Never expose the .env in your webserver in any way.
+
+Then you can customize the .env file to suit your needs.
+
+### Users and directories config
+COPY the user_config_template.json into a file named users_config.json
+
+Assign each user one or more root directories for storing/sharing files from/to your server.
+
+Users can have the following roles: 
+- all : user is admin user for this root directory. Not only it has write access but also can create shares to existing other users.
+- canRead : readonly access
+- CanWrite: read and write access but not possible to create shares.
+
 ## Developper information
 
 The following is developper instructions about the way Nico's Drive has been built.
