@@ -78,8 +78,6 @@ app.locals.privilegeManager = privilegeManager;
 
 userConfig.users.forEach(user => {
 
-    console.log(`Configuring... ${JSON.stringify(user)}`);
-
     // configure users for app
     console.log('Creating DAV user : ' + user.username);
 
@@ -88,7 +86,7 @@ userConfig.users.forEach(user => {
     // configure privileges for the root directories mapped names of that user. 
     user.rootDirectories.forEach(rootDir => {
         const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
-        privilegeManager.setRights(managedUser, rootDirName, ['all']);
+        privilegeManager.setRights(managedUser, rootDirName, rootDir.roles);
     });
 });
 
@@ -107,6 +105,7 @@ const server = new webdav.WebDAVServer({
     // httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Default realm'),
     // basic auth only for synology cloud sync
     httpAuthentication: new webdav.HTTPBasicAuthentication(userManager, 'Default realm'),
+    requireAuthentification: true,
     privilegeManager: privilegeManager
 });
 
