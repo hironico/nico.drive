@@ -76,9 +76,6 @@ const privilegeManager = new webdav.SimplePathPrivilegeManager();
 // add privilege manager to locals to retreive it from routes
 app.locals.privilegeManager = privilegeManager;
 
-console.log('User config is:');
-console.log(JSON.stringify(userConfig));
-
 userConfig.users.forEach(user => {
 
     console.log(`Configuring... ${JSON.stringify(user)}`);
