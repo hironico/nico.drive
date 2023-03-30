@@ -7,17 +7,17 @@
                 {
                     "name": "/images",
                     "physicalPath": "/home/hironico/Images",
-                    "roles": [ "user", "admin" ]
+                    "roles": [ "canWrite", "all" ]
                 },
                 {
                     "name": "/home",
                     "physicalPath": "/home/hironico",
-                    "roles": [ "user", "admin" ]
+                    "roles": [ "canRead" ]
                 },
                 {
                     "name": "/share",
                     "physicalPath": "/usr/share",
-                    "roles": [ "user"]
+                    "roles": [ "canRead"]
                 }
             ]
         }
