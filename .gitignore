@@ -18,6 +18,6 @@ cert.pem
 
 key.pem
 
-users_config.json
+**/users_config.json
 
 tmp/
