@@ -45,7 +45,7 @@ IMPORTANT: Never expose the .env in your webserver in any way.
 Then you can customize the .env file to suit your needs.
 
 ### Users and directories config
-COPY the user_config_template.json into a file named users_config.json
+COPY the user_config.json.default into a file named users_config.json
 
 Assign each user one or more root directories for storing/sharing files from/to your server.
 
