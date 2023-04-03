@@ -90,10 +90,6 @@ userConfig.users.forEach(user => {
     });
 });
 
-// admin user config
-const adminUser = userManager.addUser(process.env.DAV_ADMIN_USER, process.env.DAV_ADMIN_PASSWORD, true);
-privilegeManager.setRights(adminUser, '/', ['all']);
-
 // now configure additional features routes
 authApi.register(app);
 thumbApi.register(app);
