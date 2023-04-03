@@ -3,7 +3,8 @@
  */
 
 import crypto from 'crypto';
-import { createReadStream as fsCreateReadStream } from "fs";
+import { createReadStream as fsCreateReadStream, readdirSync, statSync } from "fs";
+import { join } from 'path';
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
@@ -77,3 +78,28 @@ export const md5 = (fileName: string): Promise<string> => {
         }
     });
 };
+
+/**
+ * Computes the total of space used by a given directory name
+ * @param dir the name of the directory to get the total size recursively
+ * @returns Promise<number> containing the total of space used in bytes.
+ */
+export const dirSize = (dir: string) : number => {
+    const files = readdirSync( dir, { withFileTypes: true } );
+  
+    const paths = files.map(file => {
+      const path = join( dir, file.name );  
+      if ( file.isDirectory() ) {
+        return dirSize( path );
+      }
+  
+      if ( file.isFile() ) {
+        const { size } = statSync( path );        
+        return size;
+      }
+  
+      return 0;
+    } );
+  
+    return paths.reduce( ( i, size ) => i + size, 0 );
+  }

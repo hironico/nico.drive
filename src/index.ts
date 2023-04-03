@@ -17,6 +17,9 @@ import userConfig from '../users_config.json';
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
 import { afterLogListener } from "./requestlistener/afterLogListener";
+import { PerUserQuotaStorageManager } from "./lib/quota";
+import { findPhysicalPath, hasOneOfRoles } from "./lib/auth";
+import { dirSize } from "./lib/fileutils";
 
 // if no .env file found then no need to go further
 try {
@@ -76,18 +79,35 @@ const privilegeManager = new webdav.SimplePathPrivilegeManager();
 // add privilege manager to locals to retreive it from routes
 app.locals.privilegeManager = privilegeManager;
 
+// add the quota manager to the configuration
+const FIVE_GIGS: number = 1024*1024*1024 * 5;
+const quotaManager = new PerUserQuotaStorageManager(FIVE_GIGS);
+
+// add privilege manager to locals to retreive it from routes
+app.locals.quotaManager = quotaManager;
+
 userConfig.users.forEach(user => {
 
     // configure users for app
     console.log('Creating DAV user : ' + user.username);
-
     const managedUser = userManager.addUser(user.username, user.password, false);
 
     // configure privileges for the root directories mapped names of that user. 
+    let currentReservedBytes = 0;
     user.rootDirectories.forEach(rootDir => {
         const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
         privilegeManager.setRights(managedUser, rootDirName, rootDir.roles);
+
+        if (hasOneOfRoles(user.username, [ 'all', 'canWrite' ], rootDir.name)) {            
+            // compute the total size in bytes of this root dir and add it to the current space reserved to this user.            
+            const physicalPath = findPhysicalPath(user.username, rootDir.name);
+            currentReservedBytes += dirSize(physicalPath);
+        }
     });
+
+    console.info(`Setting user quota: ${user.username} >>> ${currentReservedBytes} / ${user.quota} bytes.`);
+    quotaManager.setUserLimit(managedUser, user.quota);
+    quotaManager.setUserReserved(managedUser, currentReservedBytes);
 });
 
 // now configure additional features routes
@@ -102,7 +122,8 @@ const server = new webdav.WebDAVServer({
     // basic auth only for synology cloud sync
     httpAuthentication: new webdav.HTTPBasicAuthentication(userManager, 'Default realm'),
     requireAuthentification: true,
-    privilegeManager: privilegeManager
+    privilegeManager: privilegeManager,
+    storageManager: quotaManager
 });
 
 server.beforeRequest(beforeDELETEListener);

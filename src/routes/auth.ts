@@ -10,7 +10,9 @@ class UserProfile {
     username: string;
     isAdministrator: boolean;
     isDefaultUser: boolean;
-    rootDirs: string[]
+    rootDirs: string[];
+    quota: number;
+    quotaUsed: number;
 
     static createFromConfig (name: string) : UserProfile {
 
@@ -20,6 +22,7 @@ class UserProfile {
                 profile = new UserProfile();
                 profile.username = user.username;
                 profile.rootDirs = user.rootDirectories.map(rootDir => rootDir.name);
+                profile.quota = user.quota;
             }
         });
 
@@ -30,6 +33,7 @@ class UserProfile {
 export const register = (app: express.Application) : void => {
 
     const userManager = app.locals.userManager;
+    const quotaManager = app.locals.quotaManager;
 
     // first protect the API using the basic Auth handler
     app.use('/auth', expressBasicAuth({ authorizer: basicAuthHandler }));
@@ -53,6 +57,10 @@ export const register = (app: express.Application) : void => {
                 userProfile.uid = user.uid;                
                 userProfile.isAdministrator = user.isAdministrator;
                 userProfile.isDefaultUser = user.isDefaultUser;
+
+                // complete with quota info from auota manager
+                const reserved = quotaManager.getUserReserved(user);
+                userProfile.quotaUsed = reserved;
 
                 res.status(200).send(userProfile);
             } else {

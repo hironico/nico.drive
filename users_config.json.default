@@ -3,6 +3,7 @@
         {
             "username": "hironico",
             "password": "hironico",
+            "quota": 539091200,
             "rootDirectories": [
                 {
                     "name": "/images",

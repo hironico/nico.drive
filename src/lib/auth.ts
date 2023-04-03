@@ -24,11 +24,11 @@ export const basicAuthHandler = (usr: string, pwd: string) : boolean => {
 /**
  * Test if a user has a certain role on a root directory name.
  * @param usr tested user
- * @param role the tested role against the user is tested
- * @param rootDirName root dir name on which we want to know if this user has a role
- * @returns true if the user exists and the root directory exists for that user and the user has that role on this root director. false otherwise.
+ * @param roles the tested roles array against the user defined roles
+ * @param rootDirName root dir name on which we want to know if this user has, at least one of the roles provided
+ * @returns true if the user exists and the root directory exists for that user and the user has at least one of provided roles on this root directory. false otherwise.
  */
-export const hasRole = (usr: string, role: string, rootDirName: string): boolean => {
+export const hasOneOfRoles = (usr: string, roles: Array<string>, rootDirName: string): boolean => {
     const matchingUsers = usersConfig.users.filter(user => user.username === usr);
     if (typeof matchingUsers === 'undefined' || matchingUsers.length !== 1) {
         return false;
@@ -43,5 +43,12 @@ export const hasRole = (usr: string, role: string, rootDirName: string): boolean
 
     const rootDir = matchingRootDirs[0];
 
-    return rootDir.roles.indexOf(role) >= 0;
+    for(const role of roles) {
+        if (rootDir.roles.indexOf(role) >= 0) {
+            return true;
+        }
+    }
+
+    return false;
+
 }
