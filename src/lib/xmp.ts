@@ -1,4 +1,4 @@
-import fs, { EncodingOption } from 'fs';
+import fs from 'fs';
 import { parseStringPromise } from 'xml2js';
 
 
@@ -28,9 +28,6 @@ class XMPLoader {
     }
 
     loadFromFile(filename: string): void {
-        const options: EncodingOption = {
-            encoding: "binary"
-        }
         const contents = fs.readFileSync(filename, null);
         this.buffer = this.toArrayBuffer(contents);        
     }

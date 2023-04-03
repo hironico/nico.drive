@@ -26,7 +26,7 @@ export const beforeDELETEListener: RequestListener = (arg, next) => {
                })
             }).catch(error => console.error(`>>>> WARNING: Cannot delete thumbs for ${fullFilename}.\n${error}`));
         })
-        .catch(error => console.error(`>>>> ERROR: cannot compute MD5 for deleting thumbs of ${fullFilename}`));
+        .catch(error => console.error(`>>>> ERROR: cannot compute MD5 for deleting thumbs of ${fullFilename}.\n${error}`));
     }
     
     next();

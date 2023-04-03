@@ -2,12 +2,12 @@
  * Image related functions for thumb generation and manipulation
  */
 
-import sharp, { OutputInfo } from "sharp";
 import fspromise from "fs/promises";
-import { createWriteStream as fsCreateWriteStream, StatOptions, StatSyncOptions, unlinkSync } from "fs";
+import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync } from "fs";
 import child_process, { SpawnSyncOptions } from 'child_process';
 import { constants, writeFileSync, statSync } from "fs";
 import { isRawFile, md5 } from "./fileutils";
+import sharp from "sharp";
 
 export const getCachedImageFilename = (sourceFilename : string, width: string, height: string, resizeFit: string): Promise<string> => {
     return new Promise<string>( (resolve, reject) => {
@@ -67,7 +67,7 @@ export const removeThumbLock = (outputFilename: string): Promise<string> => {
 
 export const generateAndSaveThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum): Promise<string> => {
    return new Promise<string>((resolve, reject) => {
-        var outFilename: string = null;
+        let outFilename: string = null;
        getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
        .then(outputFilename => {
             outFilename = outputFilename;
@@ -97,7 +97,7 @@ export const generateAndSaveImageThumb = (input: string | Buffer, width: number,
            })
            .jpeg()
            .toFile(outputFilename)            
-           .then(outputInfo => {
+           .then(outputInfo => { // eslint-disable-line @typescript-eslint/no-unused-vars
                resolve(outputFilename);
            })
            .catch(reason => {
@@ -116,7 +116,7 @@ export const generateAndSaveRawThumb = (inputFilename: string, width: number, he
        getCachedImageFilename(inputFilename, 'full', 'full', 'none')
        .then(rawFullThumbFilename => generateAndSaveImageFromRaw(inputFilename, rawFullThumbFilename))
        .then(rawFullThumbFilename => generateAndSaveImageThumb(rawFullThumbFilename, width, height, resizeFit, outputFilename))
-       .then(outputFileName => resolve(outputFilename))
+       .then(outputFileName => resolve(outputFilename))  // eslint-disable-line @typescript-eslint/no-unused-vars
        .catch(error => reject(error));
    });
 }
