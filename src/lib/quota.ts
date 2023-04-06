@@ -1,5 +1,6 @@
 import { PerUserStorageManager, RequestContext, FileSystem, IUser } from "webdav-server/lib/index.v2";
 
+const HUNDRED_GIGA_BYTES = 1024 * 1024 * 1024 * 100;
 
 export class PerUserQuotaStorageManager extends PerUserStorageManager {
 
@@ -30,8 +31,7 @@ export class PerUserQuotaStorageManager extends PerUserStorageManager {
             return callback(false);
         }
 
-        this.storage[ctx.user.uid] = Math.max(0, nb);
-        this.perUserLimit[ctx.user.uid] = Math.max(0, userLimit);
+        this.storage[ctx.user.uid] = Math.max(0, nb);        
         callback(true);
     }
 
@@ -44,7 +44,9 @@ export class PerUserQuotaStorageManager extends PerUserStorageManager {
             userLimit = this.limitPerUser;
         }
 
-        callback(nb === undefined ? userLimit : userLimit - nb);
+        const available = nb === undefined ? userLimit : userLimit - nb;
+        
+        callback(userLimit < 0 ? HUNDRED_GIGA_BYTES : available);
     }
 
     /**
@@ -65,16 +67,17 @@ export class PerUserQuotaStorageManager extends PerUserStorageManager {
         }
 
         // normalize unlimited
+        let myLimit = limit;
         if (limit < 0) {
-            limit = -1;
+            myLimit = -1;
         }
-        this.perUserLimit[user.uid] = limit;
+        this.perUserLimit[user.uid] = myLimit;
     }
 
     /**
      * Initialize the current amount of space used by a user.
-     * Mainly called from server sartup when configuriong user's filesystem. 
-     * Storage is counted only for fils systems theuser has access to with canWrite role.
+     * Mainly called from server sartup when configuring user's filesystem. 
+     * Storage is counted only for file systems the user has access to with canWrite role.
      * Read only roles do not take into consideration for computing current quota consumption
      * @param user the user to init the current storage consumption
      * @param storage the number of bytes currently used by this user
