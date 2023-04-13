@@ -7,7 +7,7 @@ import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync }
 import child_process, { SpawnSyncOptions } from 'child_process';
 import { constants, writeFileSync, statSync } from "fs";
 import { isRawFile, md5 } from "./fileutils";
-import sharp from "sharp";
+import sharp, { OutputInfo } from "sharp";
 
 export const getCachedImageFilename = (sourceFilename : string, width: string, height: string, resizeFit: string): Promise<string> => {
     return new Promise<string>( (resolve, reject) => {
@@ -18,8 +18,7 @@ export const getCachedImageFilename = (sourceFilename : string, width: string, h
     }); 
 }
 
-export const checkThumbLock = (outputFilename:string): Promise<string> => {
-    return new Promise<string>((resolve, reject) => {        
+export const checkThumbLock = (outputFilename:string): boolean => {        
         const lockFilename = `${outputFilename.split('_')[0]}.lock`;
         const statsOps: StatSyncOptions = {
             bigint: false,
@@ -29,50 +28,34 @@ export const checkThumbLock = (outputFilename:string): Promise<string> => {
         if (typeof lockStats === 'undefined') {
             console.log(`Putting lock file: ${lockFilename}.`);
             writeFileSync(lockFilename, `${outputFilename} lock file`);
-            resolve(outputFilename);
+            return true;
         } else {
-            const error = {
-                reason: 'LOCKED',
-                message: `Lock file for ${outputFilename} already exists !` 
-            }
-            reject(error);
+            return false;
         }
-    });
 }
 
-export const removeThumbLock = (outputFilename: string): Promise<string> => {
-    return new Promise<string>((resolve, reject) => {
-        try {
-            if (outputFilename === void 0 || outputFilename === null) {
-                resolve(null);
-                return;
-            }
-            const lockFilename = `${outputFilename.split('_')[0]}.lock`;
-            const statsOps: StatSyncOptions = {
-                bigint: false,
-                throwIfNoEntry: false
-            }
-            const lockStats = statSync(lockFilename, statsOps);
-            if (typeof lockStats !== 'undefined') {
-                console.log(`Removing lock file: ${lockFilename}`);
-                unlinkSync(lockFilename);
-            }
+export const removeThumbLock = (outputFilename: string): boolean => {
+    if (outputFilename === void 0 || outputFilename === null) {
+        return true;
+    }
+    const lockFilename = `${outputFilename.split('_')[0]}.lock`;
+    const statsOps: StatSyncOptions = {
+        bigint: false,
+        throwIfNoEntry: false
+    }
+    const lockStats = statSync(lockFilename, statsOps);
+    if (typeof lockStats !== 'undefined') {
+        console.log(`Removing lock file: ${lockFilename}`);
+        unlinkSync(lockFilename);
+    }
 
-            resolve(outputFilename);
-        } catch (error) {
-            reject(error);
-        }        
-    });    
+    return true;
 }
 
 export const generateAndSaveThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum): Promise<string> => {
    return new Promise<string>((resolve, reject) => {
         let outFilename: string = null;
        getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
-       .then(outputFilename => {
-            outFilename = outputFilename;
-            return checkThumbLock(outputFilename);
-       })
        .then(outputFilename => generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename))
        .then(outputFilename => resolve(outputFilename))
        .catch(error => reject(error))
@@ -81,14 +64,21 @@ export const generateAndSaveThumb = (input: string, width: number, height: numbe
 }
 
 export const generateAndSaveFileThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string): Promise<string> => {
-    return isRawFile(input) ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename) : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
+    if (checkThumbLock(outputFilename)) {
+        return isRawFile(input) ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename) : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
+    } else {
+        return new Promise<string>((resolve, reject) => {
+            let err = new Error(`${outputFilename} is already being generated.`);
+            err.name = 'LOCKED';
+            reject(err);
+        });
+    }    
 }
 
 export const generateAndSaveImageThumb = (input: string | Buffer, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<string> => {
     console.log('Generate and save image thumb from: ' + input + ' to ' + outputFilename);
-   return new Promise<string>((resolve, reject) => {
-       try {
-           sharp(input)
+    return new Promise<string>((resolve, reject) => {
+        sharp(input)
            .resize({
                width: width,
                height: height,
@@ -96,19 +86,11 @@ export const generateAndSaveImageThumb = (input: string | Buffer, width: number,
                position: sharp.strategy.entropy
            })
            .jpeg()
-           .toFile(outputFilename)            
-           .then(outputInfo => { // eslint-disable-line @typescript-eslint/no-unused-vars
-               resolve(outputFilename);
-           })
-           .catch(reason => {
-               const errMsg = `Error while writing the thumb jpeg cached file to disk: ${reason}`;
-               console.error(errMsg);
-               reject(errMsg);
-           });
-       } catch (error) {
-           reject(error);
-       }
-   });
+           .toFile(outputFilename)
+           .then(outputInfo => resolve(outputFilename))
+           .catch(error => reject(error));
+    });
+    
 }
 
 export const generateAndSaveRawThumb = (inputFilename: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string) : Promise<string> => {
@@ -160,3 +142,5 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
        });
    });
 }
+
+

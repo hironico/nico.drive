@@ -23,7 +23,9 @@ export const afterPUTListener: RequestListener = (arg, next) => {
             generateAndSaveThumb(fullFilename, 200, 200, resizeFit)
             .then(outputFileName => generateAndSaveThumb(fullFilename, 60, 60, resizeFit)) // eslint-disable-line @typescript-eslint/no-unused-vars
             .catch(error => {
-                console.warn(`>>>>>> WARNING: Cannot generate thumb for ${fullFilename}.\n${JSON.stringify(error)}`);
+                if (typeof error !== 'undefined' && 'LOCKED' !== error.name) {
+                    console.warn(`>>>>>> WARNING: Cannot generate thumb for ${fullFilename}.\n${JSON.stringify(error)}`);
+                }
             });
         } 
     }

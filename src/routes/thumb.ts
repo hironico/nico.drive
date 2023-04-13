@@ -130,7 +130,7 @@ const generateThumb = (req: express.Request, res: express.Response, next: expres
         console.log(`Thumb for ${req.body.fullFilename} has been dynamically generated: ${outputInfo}`);
         next();
     }).catch(error => {
-        if (error.reason === 'LOCKED') {
+        if (error.name === 'LOCKED') {
             console.log(error.message);
             res.status(202).send(error.message).end();
         } else {
