@@ -56,8 +56,10 @@ export const generateAndSaveThumb = (input: string, width: number, height: numbe
    return new Promise<string>((resolve, reject) => {
         let outFilename: string = null;
        getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
-       .then(outputFilename => generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename))
-       .then(outputFilename => resolve(outputFilename))
+       .then(outputFilename => {
+            outFilename = outputFilename;
+            return generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename);
+       }).then(outputFilename => resolve(outputFilename))
        .catch(error => reject(error))
        .finally(() => removeThumbLock(outFilename));
    });
@@ -68,7 +70,7 @@ export const generateAndSaveFileThumb = (input: string, width: number, height: n
         return isRawFile(input) ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename) : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
     } else {
         return new Promise<string>((resolve, reject) => {
-            let err = new Error(`${outputFilename} is already being generated.`);
+            const err = new Error(`${outputFilename} is already being generated.`);
             err.name = 'LOCKED';
             reject(err);
         });
