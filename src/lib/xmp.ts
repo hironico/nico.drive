@@ -2,7 +2,7 @@ import fs from 'fs';
 import { parseStringPromise } from 'xml2js';
 
 
-export interface XMPElement {[key:string]: any}
+export interface XMPElement {[key:string]: any} // eslint-disable-line @typescript-eslint/no-explicit-any
 
 class XMPLoader {
     buffer: ArrayBuffer = null;
