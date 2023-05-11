@@ -5,9 +5,10 @@
 import fspromise from "fs/promises";
 import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync } from "fs";
 import child_process, { SpawnSyncOptions } from 'child_process';
+import os from "os";
 import { constants, writeFileSync, statSync } from "fs";
 import { isRawFile, md5 } from "./fileutils";
-import sharp, { OutputInfo } from "sharp";
+import sharp from "sharp";
 
 export const getCachedImageFilename = (sourceFilename : string, width: string, height: string, resizeFit: string): Promise<string> => {
     return new Promise<string>( (resolve, reject) => {
@@ -89,7 +90,7 @@ export const generateAndSaveImageThumb = (input: string | Buffer, width: number,
            })
            .jpeg()
            .toFile(outputFilename)
-           .then(outputInfo => resolve(outputFilename))
+           .then(_ => resolve(outputFilename)) // eslint-disable-line @typescript-eslint/no-unused-vars
            .catch(error => reject(error));
     });
     
@@ -100,7 +101,7 @@ export const generateAndSaveRawThumb = (inputFilename: string, width: number, he
        getCachedImageFilename(inputFilename, 'full', 'full', 'none')
        .then(rawFullThumbFilename => generateAndSaveImageFromRaw(inputFilename, rawFullThumbFilename))
        .then(rawFullThumbFilename => generateAndSaveImageThumb(rawFullThumbFilename, width, height, resizeFit, outputFilename))
-       .then(outputFileName => resolve(outputFilename))  // eslint-disable-line @typescript-eslint/no-unused-vars
+       .then(_ => resolve(outputFilename))  // eslint-disable-line @typescript-eslint/no-unused-vars
        .catch(error => reject(error));
    });
 }
@@ -112,8 +113,25 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
            return;
        }
 
-       const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : `./tools/dcraw_emu`;
-       process.env.LD_LIBRARY_PATH = './tools/.';
+       let toolsPath = null;
+       switch (os.platform()) {
+        case 'linux':
+            toolsPath = './tools/dcraw_emu';
+            process.env.LD_LIBRARY_PATH = `${process.env.LD_LIBRARY_PATH}:./tools/.`;
+            break;
+
+        case 'win32':
+            toolsPath = './tools/dcraw_emu.exe';
+            process.env.PATH = `${process.env.PATH};./tools/.`;
+            break;
+
+        default:
+            reject(`Not supported platform for embbeded dcraw emu from LibRaw: ${os.platform()}`);
+            return;
+       }
+
+       const dcrawPath = process.env.DCRAW_PATH ? process.env.DCRAW_PATH : toolsPath;
+       
        const options: SpawnSyncOptions = {
            stdio: ['pipe', 'pipe', 'pipe'],
            maxBuffer: 1024 * 1024 * 1024, // ONE GIGA BYTES
