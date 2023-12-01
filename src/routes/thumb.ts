@@ -7,8 +7,10 @@ import { findPhysicalPath, basicAuthHandler } from "../lib/auth";
 import expressBasicAuth from "express-basic-auth";
 
 import { isFileSupported } from "../lib/fileutils";
-import { getCachedImageFilename } from "../lib/imageutils";
-import { generateAndSaveThumb } from "../lib/imageutils";
+import { getCachedImageFilename, ThumbRequest } from "../lib/imageutils";
+
+import { listenToThumbQueue, publishToThumbQueue } from "../lib/rabbit_thumbgen";
+
 
 const sendThumb = (req: express.Request, res: express.Response, next: express.NextFunction, failIfNotFound: boolean) => {
     fspromise.stat(req.body.cachedFilename)
@@ -39,8 +41,8 @@ const sendThumb = (req: express.Request, res: express.Response, next: express.Ne
             res.end();        
         });
     }).catch((error) => {
-        // cannot stat the file so it is assumed not to exists
-        // if should fail then do so otherwise give hand to next middleware.
+        // cannot stat the file so it is assumed not to exists or being generated.
+        // failIfNotFound flag is here to make the api call fail if not found, otherwise we give hand to next middleware
         if (failIfNotFound) {
             res.status(404).send(`Cannot find thumb in the cache: ${error}.`).end();
         } else {
@@ -62,11 +64,6 @@ const getCachedFilename = (req: express.Request, res: express.Response, next: ex
 const sendCachedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     // try to send the cached thumb if exists. If not then try to go on generation
     sendThumb(req, res, next, false);
-}
-
-const sendGeneratedThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // try to send the generated thumb that should have been generated and cached in the previous middelwares.
-    sendThumb(req, res, next, true);
 }
 
 /**
@@ -124,20 +121,28 @@ const thumbCheckParams = (req: express.Request, res: express.Response, next: exp
     });    
 }
 
-const generateThumb = (req: express.Request, res: express.Response, next: express.NextFunction) => {    
-    generateAndSaveThumb(req.body.fullFilename, Number.parseInt(req.body.width), Number.parseInt(req.body.height), req.body.resizeFit)
-    .then(outputInfo => {
-        console.log(`Thumb for ${req.body.fullFilename} has been dynamically generated: ${outputInfo}`);
-        next();
-    }).catch(error => {
-        if (error.name === 'LOCKED') {
-            console.log(error.message);
-            res.status(202).send(error.message).end();
-        } else {
-            const errMsg = `Cannot generate thumb for file: ${req.body.fullFilename}.\n${error}`;
-            console.error(errMsg);
-            res.status(500).send(errMsg).end();
-        }        
+/**
+ * Sends a thumb request generation into the queue and response with 202 status code with 'LOCKED' content.
+ * @param req request
+ * @param res response
+ */
+const generateThumb = (req: express.Request, res: express.Response) => {    
+    const thumbReq: ThumbRequest = {
+        fullFilename: req.body.fullFilename,
+        height: req.body.height,
+        width: req.body.width,
+        resizeFit: req.body.resizeFit
+    }
+
+    console.log('Sending thumb request to queue: ' + JSON.stringify(thumbReq));
+    publishToThumbQueue(thumbReq)
+    .then(() => {
+        console.log('Thumb request to queue sent OK.');
+        res.status(202).send('LOCKED').end();
+    })
+    .catch(reason => {
+        console.error(reason);
+        res.status(500).send(reason).end();
     });
 }
 
@@ -161,6 +166,11 @@ export const register = (app: express.Application) : void => {
         });
     });
 
+    // listen to thumb request queue to generate thumbs one by one in the right order.
+    listenToThumbQueue();
+
+    console.log('Now setting up thumbs API...');
+    
     // first protect the API using the basic Auth handler
     app.use('/thumb', expressBasicAuth({ authorizer: basicAuthHandler }));
 
@@ -173,5 +183,4 @@ export const register = (app: express.Application) : void => {
     app.post('/thumb', getCachedFilename);
     app.post('/thumb', sendCachedThumb);
     app.post('/thumb', generateThumb);
-    app.post('/thumb', sendGeneratedThumb);
 };

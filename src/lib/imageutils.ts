@@ -10,6 +10,13 @@ import { constants, writeFileSync, statSync } from "fs";
 import { isRawFile, md5 } from "./fileutils";
 import sharp from "sharp";
 
+export type ThumbRequest = {
+    fullFilename: string;
+    width: number;
+    height: number;
+    resizeFit: keyof sharp.FitEnum;
+}
+
 export const getCachedImageFilename = (sourceFilename : string, width: string, height: string, resizeFit: string): Promise<string> => {
     return new Promise<string>( (resolve, reject) => {
        md5(sourceFilename)
