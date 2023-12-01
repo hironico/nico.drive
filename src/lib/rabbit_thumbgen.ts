@@ -1,5 +1,6 @@
 import amqp from 'amqplib';
 import dotenv from 'dotenv';
+import { Worker } from 'worker_threads';
 
 import { generateAndSaveThumb, ThumbRequest } from './imageutils';
 
@@ -13,6 +14,28 @@ const prefetchSize = parseInt(process.env.THUMBS_REQUEST_QUEUE_PREFETCH);
 
 let channel: amqp.Channel;
 
+const buildThumbFromMessageAsync = (msg: amqp.ConsumeMessage) => {
+    const strContent: string = msg.content.toString();    
+    console.log(" [x] Received %s", strContent);
+
+    const request: ThumbRequest = JSON.parse(strContent);    
+    const w = new Worker('./src/lib/workerlauncher_thumbgen.js', {
+        workerData: {
+          request: request
+        }
+      });
+
+      w.on('message', (result) => {
+        console.log(result);
+      });
+
+      w.on('exit', (code) => {
+        // do not forget to ack the message once the worker has started 
+        channel.ack(msg);
+      });
+}
+
+/*
 // build a thumb from a request contained in the message 
 // and ack the message to get next one
 const buildThumbFromMessage = (msg: amqp.ConsumeMessage) => {
@@ -34,6 +57,7 @@ const buildThumbFromMessage = (msg: amqp.ConsumeMessage) => {
             channel.ack(msg);
         })
 }
+*/
 
 export const listenToThumbQueue = () => {
     amqp.connect('amqp://localhost')
@@ -47,9 +71,9 @@ export const listenToThumbQueue = () => {
                     // process prefetchSize message(s) at a time. See .env config file.
                     channel.prefetch(prefetchSize);
 
-                    channel.consume(queue, buildThumbFromMessage);
+                    channel.consume(queue, buildThumbFromMessageAsync);
 
-                    console.log(" [*] Waiting for thumb requests in %s. To exit press CTRL+C", queue);
+                    console.log(" [*] Waiting for thumb requests in %s. Prefetch size is: %d", queue, prefetchSize);
                 })
         })
         .catch(reason => {

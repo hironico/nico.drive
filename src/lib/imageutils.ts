@@ -26,14 +26,18 @@ export const getCachedImageFilename = (sourceFilename : string, width: string, h
     }); 
 }
 
+export const checkFileExists = (filename: string): boolean => {
+    const statsOps: StatSyncOptions = {
+        bigint: false,
+        throwIfNoEntry: false
+    }
+    const lockStats = statSync(filename, statsOps);
+    return (typeof lockStats !== 'undefined');
+}
+
 export const checkThumbLock = (outputFilename:string): boolean => {        
         const lockFilename = `${outputFilename.split('_')[0]}.lock`;
-        const statsOps: StatSyncOptions = {
-            bigint: false,
-            throwIfNoEntry: false
-        }
-        const lockStats = statSync(lockFilename, statsOps);
-        if (typeof lockStats === 'undefined') {
+        if (!checkFileExists(lockFilename)) {
             console.log(`Putting lock file: ${lockFilename}.`);
             writeFileSync(lockFilename, `${outputFilename} lock file`);
             return true;
@@ -65,8 +69,13 @@ export const generateAndSaveThumb = (input: string, width: number, height: numbe
         let outFilename: string = null;
        getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
        .then(outputFilename => {
-            outFilename = outputFilename;
-            return generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename);
+            if (checkFileExists(outputFilename)) {
+                console.log('Thumb already exists: ' + outputFilename);
+                resolve(outputFilename);
+            } else {
+                outFilename = outputFilename;            
+                return generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename);
+            }
        }).then(outputFilename => resolve(outputFilename))
        .catch(error => reject(error))
        .finally(() => removeThumbLock(outFilename));
