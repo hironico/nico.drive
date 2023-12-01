@@ -66,7 +66,14 @@ export const listenToThumbQueue = () => {
                 .then(ch => {
                     channel = ch;
 
-                    channel.assertQueue(queue);
+                    const opts: amqp.Options.AssertQueue = {
+                        "durable": true,
+                        "arguments": {
+                            "x-message-deduplication": true,
+                            "x-queue-type": "classic"
+                        } 
+                    }
+                    channel.assertQueue(queue, opts);
 
                     // process prefetchSize message(s) at a time. See .env config file.
                     channel.prefetch(prefetchSize);
@@ -87,12 +94,23 @@ export const publishToThumbQueue = (request: ThumbRequest): Promise<void> => {
         .then(connection => {
             connection.createChannel()
                 .then(ch => {
-                    ch.assertQueue(queue, {
-                        durable: true
-                    });
+                    const queueOpts: amqp.Options.AssertQueue = {
+                        "durable": true,
+                        "arguments": {
+                            "x-message-deduplication": true,
+                            "x-queue-type": "classic"
+                        } 
+                    }
+                    ch.assertQueue(queue, queueOpts);
+
+                    const opts: amqp.Options.Publish = {
+                        headers: {
+                            "x-deduplication-header": request.fullFilename
+                        }
+                    }
 
                     const msg = JSON.stringify(request);
-                    if ( !ch.sendToQueue(queue, Buffer.from(msg)) ) {
+                    if ( !ch.sendToQueue(queue, Buffer.from(msg), opts) ) {
                         console.error('Could not send thumb request to queue !');
                     }
 
