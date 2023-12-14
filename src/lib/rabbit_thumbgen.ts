@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { Worker } from 'worker_threads';
 
 import { generateAndSaveThumb, ThumbRequest } from './imageutils';
+import { rejects } from 'assert';
 
 // ensure config is ready
 // init environment configuration
@@ -12,7 +13,8 @@ dotenv.config();
 const queue = process.env.THUMBS_REQUEST_QUEUE_NAME;
 const prefetchSize = parseInt(process.env.THUMBS_REQUEST_QUEUE_PREFETCH);
 
-let channel: amqp.Channel;
+let subscribe_channel: amqp.Channel;
+let publish_channel: amqp.Channel;
 
 const buildThumbFromMessageAsync = (msg: amqp.ConsumeMessage) => {
     const strContent: string = msg.content.toString();    
@@ -31,7 +33,7 @@ const buildThumbFromMessageAsync = (msg: amqp.ConsumeMessage) => {
 
       w.on('exit', (code) => {
         // do not forget to ack the message once the worker has started 
-        channel.ack(msg);
+        subscribe_channel.ack(msg);
       });
 }
 
@@ -64,7 +66,7 @@ export const listenToThumbQueue = () => {
         .then(connection => {
             return connection.createChannel()
                 .then(ch => {
-                    channel = ch;
+                    subscribe_channel = ch;
 
                     const opts: amqp.Options.AssertQueue = {
                         "durable": true,
@@ -73,12 +75,12 @@ export const listenToThumbQueue = () => {
                             "x-queue-type": "classic"
                         } 
                     }
-                    channel.assertQueue(queue, opts);
+                    subscribe_channel.assertQueue(queue, opts);
 
                     // process prefetchSize message(s) at a time. See .env config file.
-                    channel.prefetch(prefetchSize);
+                    subscribe_channel.prefetch(prefetchSize);
 
-                    channel.consume(queue, buildThumbFromMessageAsync);
+                    subscribe_channel.consume(queue, buildThumbFromMessageAsync);
 
                     console.log(" [*] Waiting for thumb requests in %s. Prefetch size is: %d", queue, prefetchSize);
                 })
@@ -88,12 +90,24 @@ export const listenToThumbQueue = () => {
         });
 }
 
+const createPublishChannel = () : Promise<void> => {
+    if (typeof publish_channel === 'undefined' || publish_channel === null) {
+        return amqp.connect('amqp://localhost')
+                .then(connection => connection.createChannel())
+                .then(ch => {
+                    publish_channel = ch;                    
+                })
+    } else {
+        return new Promise<void>( (accept, reject) => {
+            accept();
+        });
+    }
+}
+
 export const publishToThumbQueue = (request: ThumbRequest): Promise<void> => {
     return new Promise<void>( (resolve, reject) => {
-        amqp.connect('amqp://localhost')
-        .then(connection => {
-            connection.createChannel()
-                .then(ch => {
+        createPublishChannel()
+                .then(() => {
                     const queueOpts: amqp.Options.AssertQueue = {
                         "durable": true,
                         "arguments": {
@@ -101,7 +115,7 @@ export const publishToThumbQueue = (request: ThumbRequest): Promise<void> => {
                             "x-queue-type": "classic"
                         } 
                     }
-                    ch.assertQueue(queue, queueOpts);
+                    publish_channel.assertQueue(queue, queueOpts);
 
                     const opts: amqp.Options.Publish = {
                         headers: {
@@ -110,22 +124,13 @@ export const publishToThumbQueue = (request: ThumbRequest): Promise<void> => {
                     }
 
                     const msg = JSON.stringify(request);
-                    if ( !ch.sendToQueue(queue, Buffer.from(msg), opts) ) {
-                        console.error('Could not send thumb request to queue !');
+                    if ( !publish_channel.sendToQueue(queue, Buffer.from(msg), opts) ) {
+                        const errMsg = 'Could not send thumb request to queue !';
+                        console.error(errMsg);
+                        reject(errMsg);
+                    } else {
+                        resolve();
                     }
-
-                    /*
-                    ch.close();
-                    console.log('Channel closed.');
-
-                    connection.close();
-                    console.log('Connection closed.');
-                    */
-
-                    resolve();
                 });
-        }).catch(error => {
-            reject(error);
-        })
     });
 }
