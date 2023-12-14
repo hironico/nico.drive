@@ -13,6 +13,8 @@ import * as thumbApi from "./routes/thumb";
 
 import * as metadataApi from "./routes/metadata";
 
+import * as metricsApi from "./routes/metrics";
+
 import userConfig from '../users_config.json';
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
@@ -114,6 +116,7 @@ userConfig.users.forEach(user => {
 authApi.register(app);
 thumbApi.register(app);
 metadataApi.register(app);
+metricsApi.register(app);
 
 // create the server using HTTPS with key and cert files
 const server = new webdav.WebDAVServer({
