@@ -30,13 +30,18 @@ const collectCustomMetrics = () => {
 
     let cacheSize = 0;
     allThumbsFiles.forEach(f => {
-        const stat = fs.statSync(path.join(process.env.THUMBS_REPOSITORY_PATH, f.name));
-        cacheSize += stat.size;
+        try {
+            const stat = fs.statSync(path.join(process.env.THUMBS_REPOSITORY_PATH, f.name));
+            cacheSize += stat.size;
+        } catch (error) {
+            // error occurs for instance if a file is not found anymore between the time we listed the directory and the time 
+            // we stats each files. Typically, its when a lock file is deleted.
+        }
     });
     thumbsCacheSize.set(cacheSize);
 }
 
-const collect = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const collect = async (req: express.Request, res: express.Response) => {
 
     // update custom metrics
     collectCustomMetrics();
