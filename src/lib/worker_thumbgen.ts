@@ -4,7 +4,7 @@ import { ThumbRequest, generateAndSaveThumb } from './imageutils';
 // get the configuration from the .env file
 dotenv.config();
 
-console.log('Inside worker_thumbgen after dotenv config.');
+// console.log('Inside worker_thumbgen after dotenv config.');
 
 export const generateThumb = (request: ThumbRequest):void => {
         console.log(`Thumb request for worker is ${JSON.stringify(request)}`);

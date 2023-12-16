@@ -2,8 +2,7 @@ import amqp from 'amqplib';
 import dotenv from 'dotenv';
 import { Worker } from 'worker_threads';
 
-import { generateAndSaveThumb, ThumbRequest } from './imageutils';
-import { rejects } from 'assert';
+import { ThumbRequest } from './imageutils';
 
 // ensure config is ready
 // init environment configuration
@@ -32,34 +31,14 @@ const buildThumbFromMessageAsync = (msg: amqp.ConsumeMessage) => {
       });
 
       w.on('exit', (code) => {
+        if (code != 0) {
+            console.log(`WARNING: thumb generator thread exited with return code: ${code}`);
+        }
+
         // do not forget to ack the message once the worker has started 
         subscribe_channel.ack(msg);
       });
 }
-
-/*
-// build a thumb from a request contained in the message 
-// and ack the message to get next one
-const buildThumbFromMessage = (msg: amqp.ConsumeMessage) => {
-    const strContent: string = msg.content.toString();    
-    console.log(" [x] Received %s", strContent);
-
-    const request: ThumbRequest = JSON.parse(strContent);    
-    generateAndSaveThumb(request.fullFilename, request.width, request.height, request.resizeFit)
-        .then(outputInfo => {
-            console.log(`Thumb for ${request.fullFilename} has been dynamically generated: ${outputInfo}`);
-        }).catch(error => {
-            if (error.name === 'LOCKED') {
-                console.log(error.message);
-            } else {
-                const errMsg = `Cannot generate thumb for file: ${request.fullFilename}.\n${error}`;
-                console.error(errMsg);
-            }
-        }).finally(() => {
-            channel.ack(msg);
-        })
-}
-*/
 
 export const listenToThumbQueue = () => {
     amqp.connect('amqp://localhost')
@@ -98,7 +77,7 @@ const createPublishChannel = () : Promise<void> => {
                     publish_channel = ch;                    
                 })
     } else {
-        return new Promise<void>( (accept, reject) => {
+        return new Promise<void>( (accept, ) => {
             accept();
         });
     }
