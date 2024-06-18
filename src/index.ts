@@ -35,7 +35,7 @@ try {
 dotenv.config();
 
 // now testing SSL cert files if SSL is actually enabled files ...
-if (process.env.SERVER_SLL_ENABLED === 'true') {
+if (process.env.SERVER_SSL_ENABLED === 'true') {
     try {
         fs.statSync(process.env.SERVER_SSL_KEY_FILE);
         fs.statSync(process.env.SERVER_SSL_CERT_FILE);
