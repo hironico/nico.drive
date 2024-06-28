@@ -21,6 +21,7 @@ In order to get it up and running in your environment, you need :
 Assuming you have configured your box with a dedicated user ; to run your server, then you need to:
 - Git clone the repository
 - COPY the "dotenv-sample" file into a file named ".env", then adapt to reflect your current setup.
+- RabbitMQ install : use the install-rabbitmq.sh and then, setup-rabbitmq.sh scripts
 - npm install
 - npm run build
 - npm run start
