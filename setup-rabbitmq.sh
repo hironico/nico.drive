@@ -20,18 +20,22 @@ sudo rabbitmqctl set_user_tags full_access administrator
 # now install the deduplication plugin at message level
 # TODO : Adapt to the latest version if required. 
 # See : https://github.com/noxdafox/rabbitmq-message-deduplication/
-wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/0.6.2/elixir-1.14.0.ez >/dev/null 2>&1
-wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/0.6.2/rabbitmq_message_deduplication-0.6.2.ez >/dev/null 2>&1
 
-if [ ! -f elixir-1.14.0.ez ] 
+DEDUPLICATION_VERSION=0.6.3
+ELIXIR_VERSION=1.16.3
+
+wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/elixir-$ELIXIR_VERSION.ez >/dev/null 2>&1
+wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez >/dev/null 2>&1
+
+if [ ! -f elixir-$ELIXIR_VERSION.ez] 
 then
-    echo "ERROR: cannot download elixir-1.14.0.ez"
+    echo "ERROR: cannot download elixir-$ELIXIR_VERSION.ez"
     exit -1
 fi
 
-if [ ! -f rabbitmq_message_deduplication-0.6.2.ez ]
+if [ ! -f rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez ]
 then
-    echo "ERROR: cannot download rabbitmq_message_deduplication-0.6.2.ez"
+    echo "ERROR: cannot download rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez"
     exit -2
 fi
 
@@ -43,9 +47,14 @@ MQHOME="$MQHOME/../"
 PLUGINS_HOME="$MQHOME/plugins/"
 echo "Rabbit MQ plugins directory is: $PLUGINS_HOME"
 
+#Clean up of old versions if any
+sudo rabbitmq-plugins disable rabbitmq_message_deduplication
+sudo rm -f $PLUGINS_HOME/elixir*.ez
+sudo rm -f $PLUGINS_HOME/rabbitmq_message_deduplication*.ez
+
 # copy plugins to rabbit mq plugins directory
-sudo cp elixir-1.14.0.ez $PLUGINS_HOME
-sudo cp rabbitmq_message_deduplication-0.6.2.ez $PLUGINS_HOME
+sudo cp elixir-$ELIXIR_VERSION.ez $PLUGINS_HOME
+sudo cp rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez $PLUGINS_HOME
 
 # activate plugins
 sudo rabbitmq-plugins enable rabbitmq_message_deduplication
