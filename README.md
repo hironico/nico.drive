@@ -21,6 +21,7 @@ In order to get it up and running in your environment, you need :
 Assuming you have configured your box with a dedicated user ; to run your server, then you need to:
 - Git clone the repository
 - COPY the "dotenv-sample" file into a file named ".env", then adapt to reflect your current setup.
+- COPY the "users_config.json.default" file into a file named "users_config.json". See "Users and directories config" below for more information.
 - RabbitMQ install : use the install-rabbitmq.sh and then, setup-rabbitmq.sh scripts
 - npm install
 - npm run build
@@ -54,6 +55,8 @@ Users can have the following roles:
 - all : user is admin user for this root directory. Not only it has write access but also can create shares to existing other users.
 - canRead : readonly access
 - CanWrite: read and write access but not possible to create shares.
+
+Each user is assigned a quota in bytes. If the quota is exceeded then no more upload is possible for that user.
 
 ## Developper information
 
