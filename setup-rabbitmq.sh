@@ -7,6 +7,17 @@
 # This scripts will CONFIGURE Rabbit MQ to you linux ubuntu server
 # BEFORE RUNNING this script, run install-rabbitmq.sh if there is no rabbitmq server installed.
 
+#### 
+# check argument to be zero and otherwise exit the script
+####
+exit_if_error () {
+    if [ $1 -ne 0 ] 
+    then
+        exit -99
+    fi
+}
+
+
 # Enable the management plugin for monitoring
 sudo rabbitmq-plugins enable rabbitmq_management
 
@@ -24,10 +35,13 @@ sudo rabbitmqctl set_user_tags full_access administrator
 DEDUPLICATION_VERSION=0.6.3
 ELIXIR_VERSION=1.16.3
 
-wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/elixir-$ELIXIR_VERSION.ez >/dev/null 2>&1
-wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez >/dev/null 2>&1
+wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/elixir-$ELIXIR_VERSION.ez 
+exit_if_error $?
 
-if [ ! -f elixir-$ELIXIR_VERSION.ez] 
+wget https://github.com/noxdafox/rabbitmq-message-deduplication/releases/download/$DEDUPLICATION_VERSION/rabbitmq_message_deduplication-$DEDUPLICATION_VERSION.ez
+exit_if_error $?
+
+if [ ! -f elixir-$ELIXIR_VERSION.ez ] 
 then
     echo "ERROR: cannot download elixir-$ELIXIR_VERSION.ez"
     exit -1
