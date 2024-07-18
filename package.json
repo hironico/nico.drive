@@ -1,6 +1,6 @@
 {
   "name": "nico.drive",
-  "version": "7.9.1",
+  "version": "7.10.0",
   "description": "WebDav Server with cool user interface for web and mobile.",
   "main": "dist/src/index.js",
   "scripts": {
