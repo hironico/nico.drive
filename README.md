@@ -11,7 +11,7 @@ It's an all-in-one solution to backup important files and memories yet very simp
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
     - digital camera raw file formats support for thumbs
-* Embedded WebDAV explorer web application
+* Embedded WebDAV explorer web application, optimized for mobile. [More info](https://github.com/hironico/nico.drive.client)
 
 ## Getting started
 In order to get it up and running in your environment, you need :
@@ -61,7 +61,7 @@ Each user is assigned a quota in bytes. If the quota is exceeded then no more up
 ## Developper information
 
 The following is developper instructions about the way Nico's Drive has been built.
-Is contains various links where the author found instructions on how to setup teh development environment,
+Is contains various links where the author found instructions on how to setup the development environment,
 code, libraries used etc...
 
 ### Build issues (and their solutions)
@@ -78,7 +78,6 @@ code, libraries used etc...
 * tslint being outdated, we used eslint instead with instructions here [Getting started with eslint](https://eslint.org/docs/user-guide/getting-started)
 * In order to get HTTPS working we followed the following tutorial: [Running ExpressJS server over HTTPS](https://timonweb.com/javascript/running-expressjs-server-over-https/)
 * After that we needed configuration options: [so we use the dotEnv project](https://developer.okta.com/blog/2018/11/15/node-express-typescript#a-better-way-to-manage-configuration-settings-in-nodejs)
-* Created the azure-pipelines.yml to get continuous integration from Azure DevOps
 * Thumbnail library is [SHARP](https://www.npmjs.com/package/sharp)
 * Original Digital Camera RAW file support from dcraw : https://www.dechifro.org/dcraw/
 * Advanced Digital Camera RAW file support provided via [LibRaw](https://github.com/LibRaw/LibRaw/)
