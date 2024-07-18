@@ -1,6 +1,7 @@
 {
   "short_name": "nico.drive.client",
-  "name": "Nico Drive Client is a WebDAV explorer written in React by hironico.net",
+  "name": "Nico's drive",
+  "description": "Nico Drive Client is a WebDAV explorer written in React by hironico.net",
   "icons": [
     {
       "src": "favicon.ico",
