@@ -6,7 +6,7 @@ import { unlink, readdir } from "fs/promises";
 // AFTER delete listener ensure the thumbs are properly deleted from the cache when a supported
 // image file is removed by the webdav server.
 export const beforeDELETEListener: RequestListener = (arg, next) => {
-    if (arg.request.method === 'DELETE' && arg.response.statusCode === 200 && isFileSupported(arg.requested.uri)) {
+    if (arg.request.method === 'DELETE' && isFileSupported(arg.requested.uri)) {
         // in nico's drive, the URI is of the form /user/homedirname/relative/path/to/folder/and/file
         const pathElements = arg.requested.uri.split('/');
         pathElements.shift(); // first element is always empty !
@@ -22,6 +22,7 @@ export const beforeDELETEListener: RequestListener = (arg, next) => {
             .then(files => {
                files.filter(name => name.startsWith(md5Sum)).forEach(f =>{
                     unlink(`${process.env.THUMBS_REPOSITORY_PATH}/${f}`)
+                    .then(() => console.log(`>>>> SUCCESS: Thumb for ${fullFilename} has been deleted.`))
                     .catch(reason => console.error(`>>>> WARNING: cannot delete thumbs for: ${fullFilename}.\nReason: ${reason}`));
                })
             }).catch(error => console.error(`>>>> WARNING: Cannot delete thumbs for ${fullFilename}.\n${error}`));
