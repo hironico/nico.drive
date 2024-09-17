@@ -70,13 +70,9 @@ export const listenToThumbQueue = () => {
         });
 }
 
-const createPublishChannel = async (): Promise<amqp.Channel> => {
-        const connection = await amqp.connect('amqp://localhost')
-        return connection.createChannel();
-}
-
 export const publishToThumbQueue = async (request: ThumbRequest): Promise<void> => {
-    const publish_channel = await createPublishChannel();
+    const connection = await amqp.connect('amqp://localhost');
+    const publish_channel = await connection.createChannel();
     const queueOpts: amqp.Options.AssertQueue = {
         durable: true,
         arguments: {
@@ -97,9 +93,11 @@ export const publishToThumbQueue = async (request: ThumbRequest): Promise<void> 
         if (!publish_channel.sendToQueue(queue, Buffer.from(msg), opts)) {
             const errMsg = 'Could not send thumb request to queue !';
             console.error(errMsg);
-            reject();
+            reject(errMsg);
         } else {
-            publish_channel.close();
+            publish_channel.close()
+                .then(() => connection.close())
+                .catch(error => reject(error));
             accept();
         }
     });
