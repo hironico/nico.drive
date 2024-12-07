@@ -75,3 +75,6 @@ sudo rabbitmq-plugins enable rabbitmq_message_deduplication
 
 # clean up 
 rm *.ez
+
+# also activate monitoring via prometheus if not already activated
+sudo rabbitmq-plugins enable rabbitmq_prometheus

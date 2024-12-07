@@ -5,6 +5,9 @@ import { ExifImage, ExifData } from "exif";
 import { basicAuthHandler, findPhysicalPath } from "../lib/auth";
 import XMPLoader from "../lib/xmp";
 import expressBasicAuth from "express-basic-auth";
+import { dirSize } from "../lib/fileutils";
+import { dirElementsCount } from "../lib/fileutils";
+import { accessSync, constants, existsSync, statSync } from "fs";
 
 export const register = (app: express.Application) : void => {
 
@@ -127,5 +130,58 @@ export const register = (app: express.Application) : void => {
         } else {
             res.status(200).send('').end();
         }
+    });
+
+    app.post('/meta/folder', (req, res) => {
+
+        const filename: string = req.body.filename;
+        const username: string = req.body.username;
+        const homeDir: string = req.body.homeDir;
+
+        if (typeof filename === 'undefined' || filename === null) {
+            res.status(400).send('You must provide filename in the request body.').end();
+            return;
+        }
+
+        if (typeof username === 'undefined' || username === null) {
+            res.status(400).send('You must provide username in the request body.').end();
+            return;
+        }
+
+        if (typeof homeDir === 'undefined' || homeDir === null) {
+            res.status(400).send('You must provide homeDir in the request body.').end();
+            return;
+        }
+
+        const physicalHomeDir = findPhysicalPath(username, homeDir);
+        const fullDirName = `${physicalHomeDir}/${filename}`;
+
+        if (!existsSync(fullDirName)) {
+            res.status(400).send(`Provided filename not found. ${filename}`).end();
+            return;
+        }
+
+        const dirInfo = statSync(fullDirName);
+        if (!dirInfo || !dirInfo.isDirectory()) {
+            res.status(400).send('Provided filename is not a directory.').end();
+            return;
+        }
+
+        try {
+            accessSync(fullDirName, constants.R_OK | constants.X_OK);
+        } catch (error) {
+            res.status(400).send('Cannot read this directory. Permission denied.').end();
+            return;
+        }
+
+        const sizeInBytes = dirSize(fullDirName);
+        const elementsCount = dirElementsCount(fullDirName);
+
+        const dirMetatData = {
+            sizeBytes: sizeInBytes,
+            elementsCount: elementsCount
+        }
+
+        res.status(200).send(JSON.stringify(dirMetatData));
     });
 }

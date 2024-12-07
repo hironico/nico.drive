@@ -3,7 +3,7 @@
  */
 
 import crypto from 'crypto';
-import { createReadStream as fsCreateReadStream, readdirSync, statSync } from "fs";
+import { accessSync, constants, createReadStream as fsCreateReadStream, readdirSync, statSync } from "fs";
 import { join } from 'path';
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
@@ -85,21 +85,38 @@ export const md5 = (fileName: string): Promise<string> => {
  * @returns Promise<number> containing the total of space used in bytes.
  */
 export const dirSize = (dir: string) : number => {
+    try {
+        accessSync(dir, constants.R_OK | constants.X_OK);
+    } catch (error) {
+        console.log(`Cannot compute directory size for ${dir}. Access denied. Total size will be incorrect.`);
+        return 0;
+    }
+
     const files = readdirSync( dir, { withFileTypes: true } );
-  
+
     const paths = files.map(file => {
-      const path = join( dir, file.name );  
-      if ( file.isDirectory() ) {
-        return dirSize( path );
-      }
-  
-      if ( file.isFile() ) {
-        const { size } = statSync( path );        
-        return size;
-      }
-  
-      return 0;
-    } );
+        const path = join( dir, file.name );  
+        if ( file.isDirectory() ) {
+            return dirSize( path );
+        }
+    
+        if ( file.isFile() ) {
+            const { size } = statSync( path );        
+            return size;
+        }
+    
+        return 0;
+    });
   
     return paths.reduce( ( i, size ) => i + size, 0 );
   }
+
+/**
+ * Count the number of elements in a given directory. This function is not recursive.
+ * @param dir the directory to count elements from 
+ * @returns number of files and folders in the directory.
+ */
+export const dirElementsCount = (dir: string) : number => {
+    const entries = readdirSync(dir);
+    return entries.length;
+}

@@ -97,8 +97,31 @@ export const publishToThumbQueue = async (request: ThumbRequest): Promise<void> 
         } else {
             publish_channel.close()
                 .then(() => connection.close())
-                .catch(error => reject(error));
-            accept();
+                .then(() => accept())
+                .catch(error => reject(error));            
         }
     });
+}
+
+export const messageCountThumbQueue = async (): Promise<number> => {
+    const connection = await amqp.connect('amqp://localhost');
+    const publish_channel = await connection.createChannel();
+    const queueOpts: amqp.Options.AssertQueue = {
+        durable: true,
+        arguments: {
+            "x-message-deduplication" : true
+        }
+    }
+
+    const response = await publish_channel.assertQueue(queue, queueOpts);
+    return new Promise<number>((accept, reject) => {
+        if (response.messageCount) {
+            publish_channel.close()
+                .then(() => connection.close())
+                .then(() => accept(response.messageCount))
+                .catch(error => reject(error));            
+        } else {
+            reject(`Cannot get message count from thumb queue: ${queue}`);
+        } 
+    });    
 }
