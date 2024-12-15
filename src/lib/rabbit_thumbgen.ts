@@ -42,8 +42,11 @@ const buildThumbFromMessageAsync = (msg: amqp.ConsumeMessage) => {
 
 export const listenToThumbQueue = () => {
     console.log('Listen to thumb queue...');
-    amqp.connect('amqp://localhost')
-        .then(connection => {
+    amqp.connect( {
+        hostname: process.env.THUMBS_REQUEST_QUEUE_HOSTNAME,
+        username: process.env.THUMBS_REQUEST_QUEUE_USER,
+        password: process.env.THUMBS_REQUEST_QUEUE_PASS
+    }).then(connection => {
             return connection.createChannel()
                 .then(ch => {
                     subscribe_channel = ch;
@@ -71,7 +74,11 @@ export const listenToThumbQueue = () => {
 }
 
 export const publishToThumbQueue = async (request: ThumbRequest): Promise<void> => {
-    const connection = await amqp.connect('amqp://localhost');
+    const connection = await amqp.connect({
+            hostname: process.env.THUMBS_REQUEST_QUEUE_HOSTNAME,
+            username: process.env.THUMBS_REQUEST_QUEUE_USER,
+            password: process.env.THUMBS_REQUEST_QUEUE_PASS
+        });
     const publish_channel = await connection.createChannel();
     const queueOpts: amqp.Options.AssertQueue = {
         durable: true,
@@ -104,7 +111,11 @@ export const publishToThumbQueue = async (request: ThumbRequest): Promise<void> 
 }
 
 export const messageCountThumbQueue = async (): Promise<number> => {
-    const connection = await amqp.connect('amqp://localhost');
+    const connection = await amqp.connect({
+        hostname: process.env.THUMBS_REQUEST_QUEUE_HOSTNAME,
+        username: process.env.THUMBS_REQUEST_QUEUE_USER,
+        password: process.env.THUMBS_REQUEST_QUEUE_PASS
+    });
     const publish_channel = await connection.createChannel();
     const queueOpts: amqp.Options.AssertQueue = {
         durable: true,
