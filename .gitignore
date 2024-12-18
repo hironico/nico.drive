@@ -21,3 +21,5 @@ key.pem
 **/users_config.json
 
 tmp/
+
+.DS_Store
