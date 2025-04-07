@@ -5,6 +5,7 @@
 import crypto from 'crypto';
 import { accessSync, constants, createReadStream as fsCreateReadStream, readdirSync, statSync } from "fs";
 import { join } from 'path';
+import archiver from 'archiver';
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
@@ -125,4 +126,18 @@ export const dirSize = (dir: string): number => {
 export const dirElementsCount = (dir: string): number => {
     const entries = readdirSync(dir);
     return entries.length;
+}
+
+export const zipDirectory = (dir: string, archive: archiver.Archiver, finalize: boolean = true) : Promise<boolean> => {
+    return new Promise<boolean>((resolve, reject) => {
+        try {
+            archive.directory(dir, dir);
+            if (finalize) {
+                archive.finalize();
+            }
+            resolve(true);
+        }  catch (error) {
+            reject(error);
+        }
+    });    
 }

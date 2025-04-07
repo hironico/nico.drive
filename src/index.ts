@@ -15,6 +15,8 @@ import * as metadataApi from "./routes/metadata";
 
 import * as metricsApi from "./routes/metrics";
 
+import * as zipApi from "./routes/zip";
+
 import userConfig from '../users_config.json';
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
@@ -117,6 +119,7 @@ authApi.register(app);
 thumbApi.register(app);
 metadataApi.register(app);
 metricsApi.register(app);
+zipApi.register(app);
 
 // create the server using HTTPS with key and cert files
 const server = new webdav.WebDAVServer({
