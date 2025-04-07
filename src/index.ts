@@ -2,6 +2,8 @@ import { v2 as webdav } from "webdav-server";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import csp from "helmet-csp";
 import https from "https";
 import http from "http";
 import fs from "fs";
@@ -48,6 +50,13 @@ if (process.env.SERVER_SSL_ENABLED === 'true') {
 }
 
 const app = express();
+
+app.use(helmet());
+app.use(csp({
+    directives: {
+      defaultSrc: ["'self'"]
+    }
+  }));
 
 // enable CORS for the webdav server to be used by a client in the browser.
 // we use the regular cors methods plus thoses from RFC2518 aka webdav (6 last http methods)
