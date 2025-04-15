@@ -1,6 +1,6 @@
 {
   "name": "nico.drive",
-  "version": "7.11.1",
+  "version": "7.12.0",
   "description": "WebDav Server with cool user interface for web and mobile.",
   "main": "dist/src/index.js",
   "scripts": {
@@ -28,7 +28,6 @@
   "author": "about.hironico.net",
   "license": "MIT",
   "dependencies": {
-    "amqplib": "^0.10.3",
     "archiver": "^7.0.1",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
@@ -45,7 +44,6 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
-    "@types/amqplib": "^0.10.4",
     "@types/archiver": "^6.0.3",
     "@types/cors": "^2.8.10",
     "@types/exif": "^0.6.1",

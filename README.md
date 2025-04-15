@@ -22,10 +22,12 @@ Assuming you have configured your box with a dedicated user ; to run your server
 - Git clone the repository
 - COPY the "dotenv-sample" file into a file named ".env", then adapt to reflect your current setup.
 - COPY the "users_config.json.default" file into a file named "users_config.json". See "Users and directories config" below for more information.
-- RabbitMQ install : use the install-rabbitmq.sh and then, setup-rabbitmq.sh scripts
 - npm install
 - npm run build
 - npm run start
+
+Alternatively you can use the start.sh and stop.sh scripts.
+
 - Connect WebDav client to your new server (follow vendor instructions)
 
   or
@@ -42,7 +44,9 @@ Each configuration has examples in a dedicated sample file that can be customize
 ### Server config
 COPY the dotenv.sample file to create a file named '.env' (dot env litterally).
 
-IMPORTANT: Never expose the .env in your webserver in any way.
+IMPORTANT: 
+- Never expose the .env in your webserver in any way.
+- Never expose the users_config.json file in your webserver in any way.
 
 Then you can customize the .env file to suit your needs.
 

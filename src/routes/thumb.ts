@@ -9,8 +9,10 @@ import expressBasicAuth from "express-basic-auth";
 import { isFileSupported } from "../lib/fileutils";
 import { getCachedImageFilename, ThumbRequest } from "../lib/imageutils";
 
-import { listenToThumbQueue, publishToThumbQueue } from "../lib/rabbit_thumbgen";
+import { QueueManager } from "../lib/thumbqueuemanager";
 
+// one signle insttance of queue manager
+const thumbQueueManager = new QueueManager(Number.parseInt(process.env.THUMBS_REQUEST_QUEUE_PREFETCH));
 
 const sendThumb = (req: express.Request, res: express.Response, next: express.NextFunction, failIfNotFound: boolean) => {
     fspromise.stat(req.body.cachedFilename)
@@ -134,16 +136,12 @@ const generateThumb = (req: express.Request, res: express.Response) => {
         resizeFit: req.body.resizeFit
     }
 
-    console.log('Sending thumb request to queue: ' + JSON.stringify(thumbReq));
-    publishToThumbQueue(thumbReq)
-    .then(() => {
-        console.log('Thumb request to queue sent OK.');
-        res.status(202).send('LOCKED').end();
-    })
-    .catch(reason => {
-        console.error(reason);
-        res.status(500).send(reason).end();
-    });
+    console.log('Sending thumb request to queue manager: ' + JSON.stringify(thumbReq));
+    thumbQueueManager.enqueue({id: thumbReq.fullFilename, request: thumbReq});
+
+    // do not wait for the process to finish and tell the browser to come back later
+    console.log(`Thumb request to queue sent OK. Queue size: ${thumbQueueManager.getQueueLength()} / ${thumbQueueManager.getProcessingCount()} : processing: ${thumbQueueManager.isProcessing}`);
+    res.status(202).send('LOCKED').end();
 }
 
 export const register = (app: express.Application) : void => {
@@ -165,9 +163,6 @@ export const register = (app: express.Application) : void => {
             console.error(`CANNOT create the thumb storage directory: ${process.env.THUMBS_REPOSITORY_PATH}.\n${JSON.stringify(error)}`);
         });
     });
-
-    // listen to thumb request queue to generate thumbs one by one in the right order.
-    listenToThumbQueue();
 
     console.log('Now setting up thumbs API...');
     
