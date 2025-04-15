@@ -62,16 +62,10 @@ CLIENT_ROOT_DIR=../client
 # Tell where to find dcraw utility program.
 # default value is ./tools/dcraw_emu 
 # dcraw_emu comes from the LibRaw project which support a vast variety of digital camera RAW formats.
-#
-# Requires rabbit mq to be installed locally and accepting pub sub clients on localhost
 # 
 DCRAW_PATH=./tools/dcraw_emu
 THUMBS_REPOSITORY_PATH=/tmp/nicodrive/thumbs
-THUMBS_REQUEST_QUEUE_NAME=thumbs_requests
 THUMBS_REQUEST_QUEUE_PREFETCH=1
-THUMBS_REQUEST_QUEUE_HOSTNAME=localhost
-THUMBS_REQUEST_QUEUE_USER=rabbituser
-THUMBS_REQUEST_QUEUE_PASS=rabbitpassword
 
 #
 # Misc and debug config
