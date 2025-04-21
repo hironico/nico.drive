@@ -9,7 +9,7 @@ import archiver from 'archiver';
 
 // supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
-const supportedFormats: string[] = ['JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG'];
+const supportedFormats: string[] = ['JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG', 'HEIC'];
 
 export const getFileExtention = (filename: string): string => {
     if (typeof filename === 'undefined' || filename === null) {
@@ -36,6 +36,15 @@ export const isRawFile = (filename: string): boolean => {
 
     const regexp = new RegExp(/CR[0-9]/);
     return regexp.test(extention);
+}
+
+export const isHeicFile = (filename: string): boolean => {
+    const extention = getFileExtention(filename);
+    if (extention === null) {
+        return false;
+    }
+
+    return extention === 'HEIC';
 }
 
 export const isFileSupported = (filename: string): boolean => {

@@ -7,8 +7,9 @@ import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync }
 import child_process, { SpawnSyncOptions } from 'child_process';
 import os from "os";
 import { constants, writeFileSync, statSync } from "fs";
-import { isRawFile, md5 } from "./fileutils";
+import { isHeicFile, isRawFile, md5 } from "./fileutils";
 import sharp from "sharp";
+import convert from 'heic-convert';
 
 export type ThumbRequest = {
     fullFilename: string;
@@ -91,7 +92,13 @@ export const generateAndSaveThumb = (input: string, width: number, height: numbe
 
 export const generateAndSaveFileThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string): Promise<string> => {
     if (checkThumbLock(outputFilename)) {
-        return isRawFile(input) ? generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename) : generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
+        if (isRawFile(input)) {
+            return generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename);
+        } else if (isHeicFile(input)) {
+            return generateAndSaveHeicThumb(input, width, height, resizeFit, outputFilename);
+        } else {
+            return generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
+        }
     } else {
         return new Promise<string>((resolve, reject) => {
             const err = new Error(`${outputFilename} is already being generated.`);
@@ -188,7 +195,37 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
                 console.error(msg);
                 reject(msg);
             });
+    });    
+}
+
+export const generateAndSaveHeicThumb = (inputFilename: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        getCachedImageFilename(inputFilename, 'full', 'full', 'none')
+            .then(heicFullThumbFilename => generateAndSaveImageFromHeic(inputFilename, heicFullThumbFilename))
+            .then(heicFullThumbFilename => generateAndSaveImageThumb(heicFullThumbFilename, width, height, resizeFit, outputFilename))
+            .then(_ => resolve(outputFilename))  // eslint-disable-line @typescript-eslint/no-unused-vars
+            .catch(error => reject(error));
     });
 }
 
+export const generateAndSaveImageFromHeic = (inputFilename: string, targetFilename: string): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
+        if (!isHeicFile(inputFilename)) {
+            reject(`Cannot generate a raw file thumb from a non HEIC file: ${inputFilename}`);
+            return;
+        }
 
+        fspromise.readFile(inputFilename)
+        .then(inputBuffer => {
+            return convert({
+                buffer: inputBuffer,
+                format: 'JPEG',
+                quality: 8
+            })
+        }).then(outputBuffer => {            
+            return fspromise.writeFile(targetFilename, new Uint8Array(outputBuffer));
+        }).then(() => resolve(targetFilename))
+        .catch(error => reject(error));
+    });
+}
+    
