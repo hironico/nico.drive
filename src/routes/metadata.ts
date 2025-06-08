@@ -1,13 +1,25 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import { OptionsJson } from "body-parser";
-import { ExifImage, ExifData } from "exif";
 import { basicAuthHandler, findPhysicalPath } from "../lib/auth";
 import XMPLoader from "../lib/xmp";
 import expressBasicAuth from "express-basic-auth";
-import { dirSize } from "../lib/fileutils";
+import { dirSize, getFileExtention } from "../lib/fileutils";
 import { dirElementsCount } from "../lib/fileutils";
 import { accessSync, constants, existsSync, statSync } from "fs";
+import exifr from "exifr";
+
+const isExifSupported = (extension: string): boolean => {
+    switch(extension) {
+        case 'JPEG':
+        case 'JPG':
+        case 'HEIC':
+            return true;
+
+        default:
+            return false;
+    }
+}
 
 export const register = (app: express.Application) : void => {
 
@@ -43,25 +55,18 @@ export const register = (app: express.Application) : void => {
 
         const physicalHomeDir = findPhysicalPath(username, homeDir);
         const fullFilename = `${physicalHomeDir}/${filename}`;
-
-        if (filename.toLowerCase().endsWith('.jpg')) {
-            // load exif data if any in this jpg file.
-            try {
-                new ExifImage(fullFilename, (error: Error, exifData: ExifData) => {
-                    if (error) {
-                        console.log('Cannot get the Exif data: ' + error.message);
-                        res.status(500).send(error.message).end();
-                    } else {
-                        console.log(exifData); 
-                        res.status(200).send(exifData);
-                    }
-                });
-            } catch (error) {
+        const ext = getFileExtention(fullFilename);        
+        if (isExifSupported(ext)) {
+            exifr.parse(fullFilename, {xmp: true})
+            .then(exifData => {
+                console.log('EXIT DATA IS\n' + JSON.stringify(exifData, null, 4));
+                res.status(200).json(exifData);
+            }).catch(error => {
                 console.log('Error while retreiving exif data: ' + error.message);
                 res.status(500).send(error).end();
-            }
+            })
         } else {
-            res.status(415).send('Not supported file nature for exif extract.').end();
+            res.status(415).send('Not supported file type for reading exif data.').end();
         }
     });
 
@@ -89,9 +94,8 @@ export const register = (app: express.Application) : void => {
         const physicalHomeDir = findPhysicalPath(username, homeDir);
         const fullFilename = `${physicalHomeDir}/${filename}`;
 
-        console.log(`Loading XMP info from file: ${fullFilename}...`);
-
         if (filename.toLowerCase().endsWith('.jpg')) {
+            console.log(`Loading XMP info from file: ${fullFilename}...`);
             const loader: XMPLoader = new XMPLoader(fullFilename);
             const xmp: string = loader.find();
 
@@ -120,8 +124,8 @@ export const register = (app: express.Application) : void => {
             }
 
             promise.then(parsedData => {
-                    console.log(`XMP parsed data is:\n${parsedData}`);
-                    res.status(200).send(JSON.stringify(parsedData));
+                    console.log(`XMP parsed data is:\n${JSON.stringify(parsedData, null, 4)}`);
+                    res.status(200).json(parsedData);
                 })
                 .catch(error => {
                     console.log(`Problem while parsing XMP data: ${error}`);
