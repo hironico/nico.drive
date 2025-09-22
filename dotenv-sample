@@ -51,6 +51,11 @@ DAV_WEB_CONTEXT=/dav
 DAV_USERS_CONFIG=./users_config.json
 
 #
+# Default directory where to create and store users data files. Will be part of the users Root Directories
+#
+DAV_DATA_HOME=/data/nicodrive/root/
+
+#
 # Nico's drive server comes with its client embedded.
 # but you can specify another directory containing anything you like
 # to be accessible at the web root of the server. for instance at https://yourdomain.com/
@@ -79,3 +84,16 @@ LOG_AFTER_REQUEST=1
 
 # Set to production when deploying to production
 NODE_ENV=development
+
+# Session Configuration
+SESSION_SECRET=your-super-secret-session-key-change-this-in-production
+
+# Keycloak OIDC Configuration
+KEYCLOAK_ISSUER_URL=https://localhost:9443/realms/hironico.net
+KEYCLOAK_CLIENT_ID=account-nico-drive-dev
+KEYCLOAK_CLIENT_SECRET=your-keycloak-client-secret
+KEYCLOAK_REDIRECT_URI=http://localhost:3000/auth/callback
+
+# Optional: Redis Configuration for Session Store (recommended for production)
+# REDIS_URL=redis://localhost:6379
+# REDIS_SESSION_PREFIX=nicodrive:sess:
