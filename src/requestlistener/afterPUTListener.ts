@@ -21,7 +21,13 @@ export const afterPUTListener: RequestListener = (arg, next) => {
         const resizeFit = 'cover';    
         if (isFileSupported(fullFilename)) {
             generateAndSaveThumb(fullFilename, 200, 200, resizeFit)
-            .then(outputFileName => generateAndSaveThumb(fullFilename, 60, 60, resizeFit)) // eslint-disable-line @typescript-eslint/no-unused-vars
+            .then(_outputFileName => {// eslint-disable-line @typescript-eslint/no-unused-vars
+                try {
+                    generateAndSaveThumb(fullFilename, 60, 60, resizeFit); 
+                } catch (error) {
+                    console.error(`Error while generating ${fullFilename} thumb. ${error}`);
+                }
+            })
             .catch(error => {
                 if (typeof error !== 'undefined' && 'LOCKED' !== error.name) {
                     console.warn(`>>>>>> WARNING: Cannot generate thumb for ${fullFilename}.\n${JSON.stringify(error)}`);

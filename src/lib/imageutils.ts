@@ -218,7 +218,7 @@ export const generateAndSaveImageFromHeic = (inputFilename: string, targetFilena
         fspromise.readFile(inputFilename)
         .then(inputBuffer => {
             return convert({
-                buffer: inputBuffer,
+                buffer: inputBuffer.buffer.slice(inputBuffer.byteOffset, inputBuffer.byteOffset + inputBuffer.byteLength),
                 format: 'JPEG',
                 quality: 8
             })
@@ -228,4 +228,3 @@ export const generateAndSaveImageFromHeic = (inputFilename: string, targetFilena
         .catch(error => reject(error));
     });
 }
-    

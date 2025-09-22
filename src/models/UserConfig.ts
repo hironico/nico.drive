@@ -8,4 +8,9 @@ export class UserConfig implements IUser {
     password: string;
     username: string;
     rootDirectories: Array<IRootDirectory>;
+    quota?: number;
+}
+
+export class UserConfigFile {
+    users: Array<UserConfig>;
 }

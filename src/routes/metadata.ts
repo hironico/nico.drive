@@ -1,9 +1,8 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import { OptionsJson } from "body-parser";
-import { basicAuthHandler, findPhysicalPath } from "../lib/auth";
+import { findPhysicalPath } from "../lib/auth";
 import XMPLoader from "../lib/xmp";
-import expressBasicAuth from "express-basic-auth";
 import { dirSize, getFileExtention } from "../lib/fileutils";
 import { dirElementsCount } from "../lib/fileutils";
 import { accessSync, constants, existsSync, statSync } from "fs";
@@ -22,10 +21,6 @@ const isExifSupported = (extension: string): boolean => {
 }
 
 export const register = (app: express.Application) : void => {
-
-    // first protect the API using the basic Auth handler
-    app.use('/meta', expressBasicAuth({ authorizer: basicAuthHandler }));
-
     // configure body parser to accept json only for /meta/... request paths
     // in order to let the original dav server configuration untouched
     const jsonOpts: OptionsJson = {

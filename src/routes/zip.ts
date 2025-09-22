@@ -1,15 +1,11 @@
 import * as express from "express";
 import bodyParser from "body-parser";
 import { OptionsJson } from "body-parser";
-import { basicAuthHandler, findPhysicalPath } from "../lib/auth";
-import expressBasicAuth from "express-basic-auth";
+import { findPhysicalPath } from "../lib/auth";
 import archiver from "archiver";
 import { statSync } from "fs";
 
 export const register = (app: express.Application) : void => {
-
-    // first protect the API using the basic Auth handler
-    app.use('/zip', expressBasicAuth({ authorizer: basicAuthHandler }));
 
     // configure body parser to accept json only for /meta/... request paths
     // in order to let the original dav server configuration untouched

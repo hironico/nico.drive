@@ -4,28 +4,24 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import csp from "helmet-csp";
+import session from "express-session";
 import https from "https";
 import http from "http";
 import fs from "fs";
 import path from "path";
 
 import * as authApi from "./routes/auth";
-
 import * as thumbApi from "./routes/thumb";
-
 import * as metadataApi from "./routes/metadata";
-
 import * as metricsApi from "./routes/metrics";
-
 import * as zipApi from "./routes/zip";
 
-import userConfig from '../users_config.json';
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
 import { afterLogListener } from "./requestlistener/afterLogListener";
 import { PerUserQuotaStorageManager } from "./lib/quota";
-import { findPhysicalPath, hasOneOfRoles } from "./lib/auth";
-import { dirSize } from "./lib/fileutils";
+import { OIDCWebDAVAuthentication } from "./lib/oidc-webdav-auth";
+import { refreshUserConfig } from "./lib/auth";
 
 // if no .env file found then no need to go further
 try {
@@ -71,14 +67,55 @@ const corsOptions = {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
+// Configure session middleware
+const memoryStore = new session.MemoryStore();
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-session-secret-change-this-in-production',
+    resave: false,
+    saveUninitialized: true,
+    store: memoryStore,
+    cookie: {
+        secure: process.env.SERVER_SSL_ENABLED === 'true',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
 // available from configuration file .env
 const port = process.env.SERVER_PORT;
 
 // define a route handler for the client web app aka nico.drive.client
 // see hironico GitHub project
 const clientDir = path.join(__dirname, '..', process.env.CLIENT_ROOT_DIR);
-console.log(`Client web application will be served from: ${clientDir}`);
-app.use("/", express.static(clientDir));
+try {
+    fs.accessSync(clientDir, fs.constants.R_OK);
+    console.log(`Client web application will be served from: ${clientDir}`);
+} catch (error) {
+    console.error(`Cannot read from ${clientDir}. Cannot serve embedded client web ui: ${error}`);
+    process.exit(-1);
+}
+
+// Simple middleware to check authentication for web client
+const checkWebAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+
+    console.debug(`Checking auth for path: ${req.path}`);
+
+    // Allow access to auth routes
+    if (req.path.startsWith('/auth/')) {
+        return next();
+    }
+    
+    // Check if user is authenticated via session
+    if (req.session && req.session.user) {
+        return next();
+    }
+    
+    // Redirect to login if not authenticated
+    res.redirect('/auth/login');
+};
+
+// Protect the main application with authentication
+app.use("/", checkWebAuth, express.static(clientDir));
 
 // User manager (tells who are the users)
 const userManager = new webdav.SimpleUserManager();
@@ -96,46 +133,13 @@ app.locals.privilegeManager = privilegeManager;
 const FIVE_GIGS: number = 1024*1024*1024 * 5;
 const quotaManager = new PerUserQuotaStorageManager(FIVE_GIGS);
 
-// add privilege manager to locals to retreive it from routes
+// add quota manager to locals to retreive it from routes
 app.locals.quotaManager = quotaManager;
 
-userConfig.users.forEach(user => {
-
-    // configure users for app
-    console.log('Creating DAV user : ' + user.username);
-    const managedUser = userManager.addUser(user.username, user.password, false);
-
-    // configure privileges for the root directories mapped names of that user. 
-    let currentReservedBytes = 0;
-    user.rootDirectories.forEach(rootDir => {
-        const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
-        privilegeManager.setRights(managedUser, rootDirName, rootDir.roles);
-
-        if (hasOneOfRoles(user.username, [ 'all', 'canWrite' ], rootDir.name)) {            
-            // compute the total size in bytes of this root dir and add it to the current space reserved to this user.            
-            const physicalPath = findPhysicalPath(user.username, rootDir.name);
-            currentReservedBytes += dirSize(physicalPath);
-        }
-    });
-
-    console.info(`Setting user quota: ${user.username} >>> ${currentReservedBytes} / ${user.quota} bytes.`);
-    quotaManager.setUserLimit(managedUser, user.quota);
-    quotaManager.setUserReserved(managedUser, currentReservedBytes);
-});
-
-// now configure additional features routes
-authApi.register(app);
-thumbApi.register(app);
-metadataApi.register(app);
-metricsApi.register(app);
-zipApi.register(app);
-
-// create the server using HTTPS with key and cert files
+// create the server using OIDC authentication with basic auth fallback
 const server = new webdav.WebDAVServer({
-    // HTTP Digest authentication with the realm 'Default realm'
-    // httpAuthentication: new webdav.HTTPDigestAuthentication(userManager, 'Default realm'),
-    // basic auth only for synology cloud sync
-    httpAuthentication: new webdav.HTTPBasicAuthentication(userManager, 'Default realm'),
+    // Use custom OIDC authentication that supports session-based auth and basic auth fallback
+    httpAuthentication: new OIDCWebDAVAuthentication('Default realm'),
     requireAuthentification: true,
     privilegeManager: privilegeManager,
     storageManager: quotaManager
@@ -146,30 +150,18 @@ server.beforeRequest(beforeDELETEListener);
 server.afterRequest(afterLogListener);
 server.afterRequest(afterPUTListener);
 
-// configure physical path mapping for the root directories of all users.
-// the user's root directories are mounted under the user name as root for all directories.
-userConfig.users.forEach(user => {
+// store a reference to the server in the express app so we can refer to it for user configuration
+app.locals.webdav = server;
 
-    user.rootDirectories.forEach(rootDir => {
-        try {
-            fs.statSync(rootDir.physicalPath);
+// now configure additional features routes
+authApi.register(app);
+thumbApi.register(app);
+metadataApi.register(app);
+metricsApi.register(app);
+zipApi.register(app);
 
-            const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
-
-            server.setFileSystem(rootDirName, new webdav.PhysicalFileSystem(rootDir.physicalPath), (success) => {
-                if (success) {
-                    console.log(`User directory mounted: ${rootDirName} -> ${rootDir.physicalPath}`);
-                } else {
-                    const errMsg = `Cannot map physical path: ${rootDir.physicalPath} into: ${rootDirName}`;
-                    console.log(errMsg);
-                    throw new Error(errMsg);
-                }
-            });
-        } catch (problem) {
-            console.error(`ERROR: Configuration problem: Check the users_config.json configuration file and ensure that the physical path exists and is readable: ${rootDir.physicalPath}`);
-        }
-    });
-});
+// configure the users, the webdav server root directories and their quota from the config file
+refreshUserConfig(app);
 
 // activate webdav server as an expressjs handler
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
