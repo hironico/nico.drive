@@ -1,7 +1,7 @@
 import { v2 as webdav } from "webdav-server";
 import dotenv from "dotenv";
 import express from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import helmet from "helmet";
 import csp from "helmet-csp";
 import session from "express-session";
@@ -56,12 +56,11 @@ app.use(csp({
 
 // enable CORS for the webdav server to be used by a client in the browser.
 // we use the regular cors methods plus thoses from RFC2518 aka webdav (6 last http methods)
-const corsOptions = {
-    origin: true,
+const corsOptions : CorsOptions= {
+    origin: (origin, callback) => { callback(null, true)},
     credentials: true,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK",
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+    allowedHeaders: 'Content-Type,Authorization'
 };
 
 app.options('*', cors(corsOptions));
@@ -98,19 +97,26 @@ try {
 // Simple middleware to check authentication for web client
 const checkWebAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
 
-    console.debug(`Checking auth for path: ${req.path}`);
-
     // Allow access to auth routes
     if (req.path.startsWith('/auth/')) {
+        console.debug(`No check auth for path: ${req.path}`);
         return next();
     }
     
     // Check if user is authenticated via session
     if (req.session && req.session.user) {
+        console.log(`Found user session for path: ${req.path}`);
         return next();
     }
     
-    // Redirect to login if not authenticated
+    // check if user is authenticated with BASIC auth scheme
+    const authHeader: string = req.header('Authorization');
+    if (authHeader.startsWith('Basic')) {
+        return next();
+    }
+
+    // Redirect to login if not authenticated and not basic auth
+    console.log(`No auth for path. Redirect to login api. ${req.path}`)
     res.redirect('/auth/login');
 };
 
