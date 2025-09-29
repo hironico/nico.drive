@@ -111,7 +111,7 @@ const checkWebAuth = (req: express.Request, res: express.Response, next: express
     
     // check if user is authenticated with BASIC auth scheme
     const authHeader: string = req.header('Authorization');
-    if (authHeader.startsWith('Basic')) {
+    if (authHeader && authHeader.startsWith('Basic')) {
         return next();
     }
 
