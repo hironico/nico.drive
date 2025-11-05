@@ -14,9 +14,7 @@ server.key
 
 tools/dcraw
 
-cert.pem
-
-key.pem
+**/*.pem
 
 **/users_config.json
 

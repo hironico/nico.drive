@@ -3,8 +3,7 @@ import bodyParser from "body-parser";
 import { constants, createReadStream as fsCreateReadStream } from "fs";
 import fspromise from "fs/promises";
 import sharp from "sharp";
-import { findPhysicalPath, basicAuthHandler } from "../lib/auth";
-import expressBasicAuth from "express-basic-auth";
+import { findPhysicalPath } from "../lib/auth";
 
 import { isFileSupported } from "../lib/fileutils";
 import { getCachedImageFilename, ThumbRequest } from "../lib/imageutils";
@@ -166,9 +165,6 @@ export const register = (app: express.Application) : void => {
 
     console.log('Now setting up thumbs API...');
     
-    // first protect the API using the basic Auth handler
-    app.use('/thumb', expressBasicAuth({ authorizer: basicAuthHandler }));
-
     // configure body parser to accept json only for /thumb/... request paths
     // in order to let the original dav server configuration untouched
     app.use('/thumb', bodyParser.urlencoded({ extended: false }));

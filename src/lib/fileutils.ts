@@ -7,8 +7,9 @@ import { accessSync, constants, createReadStream as fsCreateReadStream, readdirS
 import { join } from 'path';
 import archiver from 'archiver';
 
-// supported formats are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
+// supported formats for sharp are : JPEG, PNG, WebP, AVIF, TIFF, GIF and SVG
 // see doc at : https://sharp.pixelplumbing.com/
+// added canon raw fileas and HEIC files which require specific processing
 const supportedFormats: string[] = ['JPEG', 'JPG', 'PNG', 'WEBP', 'AVIF', 'TIFF', 'TIF', 'GIF', 'SVG', 'CR2', 'CR3', 'DNG', 'HEIC'];
 
 export const getFileExtention = (filename: string): string => {
@@ -137,6 +138,13 @@ export const dirElementsCount = (dir: string): number => {
     return entries.length;
 }
 
+/**
+ * Put directory contents into a ZIP archiver recursively.
+ * @param dir the directory name, full path
+ * @param archive the zip archiver
+ * @param finalize set to true (default) to close the zip archiver after directory contents is added
+ * @returns true if the archiving is successfully done and foalse otherwise.
+ */
 export const zipDirectory = (dir: string, archive: archiver.Archiver, finalize: boolean = true) : Promise<boolean> => {
     return new Promise<boolean>((resolve, reject) => {
         try {
