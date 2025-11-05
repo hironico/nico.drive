@@ -12,6 +12,7 @@ It's an all-in-one solution to backup important files and memories yet very simp
     - image metadata API support for EXIF and XMP
     - digital camera raw file formats support for thumbs
 * Embedded WebDAV explorer web application, optimized for mobile. [More info](https://github.com/hironico/nico.drive.client)
+* Multi protocol authentication support : basic and oauth can be used at the same time
 
 ## Getting started
 In order to get it up and running in your environment, you need :
@@ -62,6 +63,17 @@ Users can have the following roles:
 
 Each user is assigned a quota in bytes. If the quota is exceeded then no more upload is possible for that user.
 
+### User federation and social login
+
+- hybrid authentication protocols : basic and oauth are supported !
+- keycloak support for user federation : use keycloak as identity provider for nico.drive
+- server can be accessed with basic user/password (ie NAS synchronization) and oauth using keycloack
+- this enables usage of social login to get into nico.drive
+- can work with basic login only ; oauth and keycloack are OPTIONAL
+
+See the .env-sample file to setup keycloak support
+Also there are docker files for podman install of keycloak to your server 
+
 ## Developper information
 
 The following is developper instructions about the way Nico's Drive has been built.
@@ -85,4 +97,5 @@ code, libraries used etc...
 * Thumbnail library is [SHARP](https://www.npmjs.com/package/sharp)
 * Original Digital Camera RAW file support from dcraw : https://www.dechifro.org/dcraw/
 * Advanced Digital Camera RAW file support provided via [LibRaw](https://github.com/LibRaw/LibRaw/)
+
 
