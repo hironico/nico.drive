@@ -46,3 +46,15 @@ ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 #        -e KC_BOOTSTRAP_ADMIN_USER=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=change_me \
 #        hironico_keycloak \
 #        start --optimized --hostname=hironico-keycloak
+
+#
+# PRODUCTION
+# Create a service to start podman container for keycloak to be started each time the server reboots.
+#
+# podman generate systemd --new --name CONTAINER_NAME
+#
+# Example: 
+# podman generate systemd --new --name hironico_keycloak
+#
+# Foolow tutorial here for activating the service at boot time for non root user
+# https://linuxhandbook.com/courses/podman/autostart-podman-containers/
