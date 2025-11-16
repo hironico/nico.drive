@@ -19,17 +19,16 @@ LOG_FILE=$LOG_DIR/${TODAY}_nodejs.log
 
 mkdir -p $LOG_DIR
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# ensure we change the current working directory to script dir
+# so that node can find the config file
+cd ${SCRIPT_DIR}
+
 # make sure the libraw.so library is accessible in the LD LIB PATH.
 if [ -d ./tools/ ]
 then
     export LD_LIBRARY_PATH=./tools/.:$LD_LIBRARY_PATH
 fi
 
-nohup node . > $LOG_FILE 2>&1 &
-PID=$!
-
-echo $PID > nicodrive.pid
-
-echo "Log file is: $LOG_FILE"
-echo "nico.drive server started with PID=$PID !"
+node . > $LOG_FILE 2>&1 
 
