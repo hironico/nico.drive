@@ -52,6 +52,18 @@ export const register = (app: express.Express): void => {
 
     // Handle OIDC callback
     app.get("/auth/callback", async (req, res) => {
+        console.log('=== /auth/callback Request Details ===');
+        console.log('Protocol:', req.protocol);
+        console.log('Hostname:', req.hostname);
+        console.log('Port:', req.get('host'));
+        console.log('Original URL:', req.originalUrl);
+        console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+        console.log('X-Forwarded-Proto:', req.get('X-Forwarded-Proto'));
+        console.log('X-Forwarded-Host:', req.get('X-Forwarded-Host'));
+        console.log('Cookie header:', req.get('Cookie'));
+        console.log('Session ID:', req.sessionID);
+        console.log('======================================');
+        
         try {
             const { code, state } = req.query;
             const sessionState = req.session.oidcState;
@@ -61,13 +73,13 @@ export const register = (app: express.Express): void => {
                 return res.status(400).json({ error: 'Invalid callback parameters' });
             }
 
-            const fullCallbackUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-            
+            // IMPORTANT: Use the configured KEYCLOAK_REDIRECT_URI for token exchange
+            // This MUST match the redirect_uri used in the authorization request
+            // Do NOT use req.protocol/req.get('host') as they may differ due to proxy
             const { user: oidcUser, idToken } = await oidcAuthService.handleCallback(
                 code as string,
                 state as string,
-                codeVerifier,
-                fullCallbackUrl
+                codeVerifier
             );
 
             console.log(`Found oidc user : ${JSON.stringify(oidcUser, null, 4)}`);
@@ -139,7 +151,20 @@ export const register = (app: express.Express): void => {
             delete req.session.oidcCodeVerifier;
 
             console.log(`OIDC authentication successful for user: ${oidcUser.username}`);
-            res.redirect('/');
+            console.log('Session BEFORE save:', JSON.stringify(req.session, null, 2));
+            console.log('Session ID BEFORE save:', req.sessionID);
+            
+            // Save session before redirecting to ensure session data is persisted
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Error saving session:', err);
+                    return res.status(500).json({ error: 'Failed to save session' });
+                }
+                console.log('Session AFTER save callback:', JSON.stringify(req.session, null, 2));
+                console.log('Session ID AFTER save:', req.sessionID);
+                console.log('Session saved successfully, redirecting to /');
+                res.redirect('/');
+            });
         } catch (error) {
             console.error('Error handling OIDC callback:', error);
             res.status(500).json({ error: 'Authentication failed' });
@@ -169,7 +194,19 @@ export const register = (app: express.Express): void => {
 
     // Check authentication status and download profile
     app.get("/auth/status", (req, res) => {
-        console.log('Checking user is authenticated...')
+        console.log('=== /auth/status Request Details ===');
+        console.log('Protocol:', req.protocol);
+        console.log('Hostname:', req.hostname);
+        console.log('Port:', req.get('host'));
+        console.log('Original URL:', req.originalUrl);
+        console.log('Full URL:', `${req.protocol}://${req.get('host')}${req.originalUrl}`);
+        console.log('X-Forwarded-Proto:', req.get('X-Forwarded-Proto'));
+        console.log('X-Forwarded-Host:', req.get('X-Forwarded-Host'));
+        console.log('Cookie header:', req.get('Cookie'));
+        console.log('Session ID:', req.sessionID);
+        console.log('Session data:', JSON.stringify(req.session, null, 2));
+        console.log('====================================');
+        
         if (req.session && req.session.user) {
             console.log(`Found authenticated user: ${JSON.stringify(req.session.user)}`);
 
@@ -182,14 +219,49 @@ export const register = (app: express.Express): void => {
                     console.log(`Quota used for ${req.session.user.username} = ${quotaUsed} bytes.`);
 
                     // complete with user root directories
-                    const cfgUser = loadUsers().users.filter(u => u.username === req.session.user.username)[0];
+                    const allUsers = loadUsers().users;
+                    const cfgUser = allUsers.filter(u => u.username === req.session.user.username)[0];
                     const rootDirs = cfgUser.rootDirectories.map(dir => dir.name);
+
+                    // Find directories shared with this user (specific shares + public directories)
+                    const sharedDirs: Array<{name: string, owner: string, access: string}> = [];
+                    allUsers.forEach(otherUser => {
+                        if (otherUser.uid !== cfgUser.uid) {
+                            otherUser.rootDirectories.forEach(dir => {
+                                // Check for specific shares
+                                if (dir.shares) {
+                                    dir.shares.forEach(share => {
+                                        if (share.uid === cfgUser.uid) {
+                                            sharedDirs.push({
+                                                name: dir.name,
+                                                owner: otherUser.username,
+                                                access: share.access
+                                            });
+                                        }
+                                    });
+                                }
+                                // Check for public directories (read-only)
+                                if (dir.isPublic === true) {
+                                    // Only add if not already added through specific share
+                                    const alreadyShared = dir.shares?.some(s => s.uid === cfgUser.uid);
+                                    if (!alreadyShared) {
+                                        sharedDirs.push({
+                                            name: dir.name,
+                                            owner: otherUser.username,
+                                            access: 'canRead'
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    });
 
                     res.json({
                         authenticated: true,
                         user: req.session.user,
                         quotaUsed: quotaUsed,
                         rootDirectories: rootDirs,
+                        sharedDirectories: sharedDirs,
                         isAdministrator: user.isAdministrator
                     });
                 }

@@ -84,32 +84,58 @@ export class OIDCAuthService {
         const retryDelay = 1000; // 1 second
 
         try {
-            // Use the provided callback URL or construct it
-            let currentUrl: URL;
-            if (callbackUrl) {
-                currentUrl = new URL(callbackUrl);
-            } else {
-                currentUrl = new URL(process.env.KEYCLOAK_REDIRECT_URI!);
-                currentUrl.searchParams.set('code', code);
-                currentUrl.searchParams.set('state', state);
+            // CRITICAL: Always use KEYCLOAK_REDIRECT_URI from environment
+            // This MUST match the redirect_uri sent in the authorization request
+            // Do NOT construct from request as proxy may change protocol/host
+            const redirectUri = process.env.KEYCLOAK_REDIRECT_URI;
+            const currentUrl = new URL(redirectUri);
+            currentUrl.searchParams.set('code', code);
+            currentUrl.searchParams.set('state', state);
+
+            console.log(`Authorization code grant with redirect_uri: ${redirectUri}`);
+            console.log(`Token exchange URL: ${currentUrl.toString()}`);
+
+            // Try the standard approach first
+            let tokenResponse;
+            try {
+                tokenResponse = await client.authorizationCodeGrant(
+                    this.config,
+                    currentUrl,
+                    {
+                        expectedState: state,
+                        pkceCodeVerifier: codeVerifier,
+                    },
+                    {
+                        clockTolerance: '120s',
+                    }
+                );
+                console.log('Token response received successfully via standard flow');
+            } catch (grantError: any) {
+                // If we get an iss parameter error, try manual token exchange
+                if (grantError.message?.includes('iss') || grantError.code === 'OAUTH_INVALID_RESPONSE') {
+                    console.warn('Standard grant failed with iss error, attempting manual token exchange...');
+                    console.error('Grant error details:', grantError.message);
+                    
+                    // Manual token exchange as fallback
+                    tokenResponse = await this.manualTokenExchange(code, codeVerifier, redirectUri);
+                } else {
+                    throw grantError;
+                }
             }
 
-            console.log(`Authorization code grant with URL: ${currentUrl.toString()}`);
-
-            // Add clock tolerance and proper validation options
-            const tokenResponse = await client.authorizationCodeGrant(
-                this.config,
-                currentUrl,
-                {
-                    expectedState: state,
-                    pkceCodeVerifier: codeVerifier,
-                },
-                {
-                    clockTolerance: '120s', // Increased clock tolerance to 120 seconds
-                }
-            );
-
             console.log('Token response received successfully');
+            
+            // Debug logging
+            try {
+                const claims = tokenResponse.claims?.();
+                if (claims) {
+                    console.log('ID Token Claims:', JSON.stringify(claims, null, 2));
+                    console.log('Token issuer (iss):', claims?.iss);
+                    console.log('Expected issuer:', process.env.KEYCLOAK_ISSUER_URL);
+                }
+            } catch (claimsError) {
+                console.error('Error getting token claims:', claimsError);
+            }
 
             const userinfo = await client.fetchUserInfo(
                 this.config,
@@ -212,6 +238,86 @@ export class OIDCAuthService {
 
             throw error;
         }
+    }
+
+    /**
+     * Manual token exchange as fallback when standard flow fails due to iss validation
+     */
+    private async manualTokenExchange(code: string, codeVerifier: string, redirectUri: string): Promise<any> {
+        if (!this.config) {
+            throw new Error('OIDC client not initialized');
+        }
+
+        console.log('Performing manual token exchange...');
+        
+        const serverMetadata = this.config.serverMetadata();
+        const tokenEndpoint = serverMetadata.token_endpoint;
+        
+        if (!tokenEndpoint) {
+            throw new Error('Token endpoint not found in server metadata');
+        }
+
+        // Prepare token request body
+        const params = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+            client_id: process.env.KEYCLOAK_CLIENT_ID!,
+            client_secret: process.env.KEYCLOAK_CLIENT_SECRET!,
+            code_verifier: codeVerifier,
+        });
+
+        console.log('Token endpoint:', tokenEndpoint);
+        console.log('Request parameters:', {
+            grant_type: 'authorization_code',
+            redirect_uri: redirectUri,
+            client_id: process.env.KEYCLOAK_CLIENT_ID,
+            code_verifier: '[REDACTED]',
+            code: '[REDACTED]',
+        });
+
+        // Make direct HTTP request to token endpoint
+        const response = await fetch(tokenEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: params.toString(),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Token exchange failed:', errorText);
+            throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
+        }
+
+        const tokenData = await response.json();
+        console.log('Manual token exchange successful');
+        
+        // Return in a format compatible with TokenEndpointResponse
+        return {
+            access_token: tokenData.access_token,
+            token_type: tokenData.token_type || 'Bearer',
+            id_token: tokenData.id_token,
+            refresh_token: tokenData.refresh_token,
+            expires_in: tokenData.expires_in,
+            scope: tokenData.scope,
+            claims: () => {
+                // Decode ID token if present
+                if (tokenData.id_token) {
+                    try {
+                        const parts = tokenData.id_token.split('.');
+                        if (parts.length === 3) {
+                            const payload = Buffer.from(parts[1], 'base64').toString('utf8');
+                            return JSON.parse(payload);
+                        }
+                    } catch (e) {
+                        console.error('Failed to decode ID token:', e);
+                    }
+                }
+                return undefined;
+            }
+        };
     }
 
     generateLogoutUrl(idToken?: string): string {

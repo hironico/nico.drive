@@ -15,6 +15,7 @@ import * as thumbApi from "./routes/thumb";
 import * as metadataApi from "./routes/metadata";
 import * as metricsApi from "./routes/metrics";
 import * as zipApi from "./routes/zip";
+import * as shareApi from "./routes/share";
 
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
@@ -50,7 +51,7 @@ const app = express();
 app.use(helmet());
 app.use(csp({
     directives: {
-      defaultSrc: ["'self'"]
+      defaultSrc: ["'self'"],
     }
   }));
 
@@ -66,18 +67,24 @@ const corsOptions : CorsOptions= {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
-// Configure session middleware
+// Configure session middleware  
 const memoryStore = new session.MemoryStore();
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-session-secret-change-this-in-production',
+    name: 'nicodrive.sid', // Custom cookie name for better identification
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Changed to false to avoid creating empty sessions
     store: memoryStore,
     cookie: {
-        secure: process.env.SERVER_SSL_ENABLED === 'true',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+        secure: false, // Must be false when using Vite proxy with HTTP
+        httpOnly: false, // Set to false to allow JavaScript access (needed for proxy)
+        sameSite: 'lax', // lax works for same-site (localhost to localhost)
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        // Don't set domain - let it default to current domain
+        path: '/' // Ensure cookie is sent for all paths
+    },
+    proxy: true, // Trust the proxy (Vite dev server)
+    rolling: true // Reset cookie maxAge on every request
 }));
 
 // available from configuration file .env
@@ -96,6 +103,12 @@ try {
 
 // Simple middleware to check authentication for web client
 const checkWebAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+
+    // allow access to manifest.json if any
+    if (req.path.startsWith('/manifest.json')) {
+        console.debug('No check auth for manifest.json');
+        return next();
+    }
 
     // Allow access to auth routes
     if (req.path.startsWith('/auth/')) {
@@ -165,6 +178,7 @@ thumbApi.register(app);
 metadataApi.register(app);
 metricsApi.register(app);
 zipApi.register(app);
+shareApi.register(app);
 
 // configure the users, the webdav server root directories and their quota from the config file
 refreshUserConfig(app);

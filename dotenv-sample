@@ -89,10 +89,16 @@ NODE_ENV=development
 SESSION_SECRET=your-super-secret-session-key-change-this-in-production
 
 # Keycloak OIDC Configuration
+# IMPORTANT FOR DEVELOPMENT: 
+# - If running client with Vite dev server (npm run dev), set KEYCLOAK_REDIRECT_URI to Vite's URL
+#   Example: KEYCLOAK_REDIRECT_URI=http://localhost:5173/auth/callback
+# - If serving client from backend server, use backend's URL
+#   Example: KEYCLOAK_REDIRECT_URI=http://localhost:3000/auth/callback
+# - Make sure the redirect URI matches the one configured in Keycloak client settings
 KEYCLOAK_ISSUER_URL=https://localhost:9443/realms/hironico.net
 KEYCLOAK_CLIENT_ID=account-nico-drive-dev
 KEYCLOAK_CLIENT_SECRET=your-keycloak-client-secret
-KEYCLOAK_REDIRECT_URI=http://localhost:3000/auth/callback
+KEYCLOAK_REDIRECT_URI=http://localhost:5173/auth/callback
 
 # Optional: Redis Configuration for Session Store (recommended for production)
 # REDIS_URL=redis://localhost:6379
