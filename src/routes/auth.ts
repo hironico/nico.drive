@@ -52,6 +52,8 @@ export const register = (app: express.Express): void => {
 
     // Handle OIDC callback
     app.get("/auth/callback", async (req, res) => {
+
+        /*
         console.log('=== /auth/callback Request Details ===');
         console.log('Protocol:', req.protocol);
         console.log('Hostname:', req.hostname);
@@ -63,6 +65,7 @@ export const register = (app: express.Express): void => {
         console.log('Cookie header:', req.get('Cookie'));
         console.log('Session ID:', req.sessionID);
         console.log('======================================');
+        */
         
         try {
             const { code, state } = req.query;
@@ -151,8 +154,11 @@ export const register = (app: express.Express): void => {
             delete req.session.oidcCodeVerifier;
 
             console.log(`OIDC authentication successful for user: ${oidcUser.username}`);
+
+            /*
             console.log('Session BEFORE save:', JSON.stringify(req.session, null, 2));
             console.log('Session ID BEFORE save:', req.sessionID);
+            */
             
             // Save session before redirecting to ensure session data is persisted
             req.session.save((err) => {
@@ -160,9 +166,13 @@ export const register = (app: express.Express): void => {
                     console.error('Error saving session:', err);
                     return res.status(500).json({ error: 'Failed to save session' });
                 }
+
+                /*
                 console.log('Session AFTER save callback:', JSON.stringify(req.session, null, 2));
                 console.log('Session ID AFTER save:', req.sessionID);
                 console.log('Session saved successfully, redirecting to /');
+                */
+
                 res.redirect('/');
             });
         } catch (error) {
@@ -194,6 +204,8 @@ export const register = (app: express.Express): void => {
 
     // Check authentication status and download profile
     app.get("/auth/status", (req, res) => {
+
+        /*
         console.log('=== /auth/status Request Details ===');
         console.log('Protocol:', req.protocol);
         console.log('Hostname:', req.hostname);
@@ -206,6 +218,7 @@ export const register = (app: express.Express): void => {
         console.log('Session ID:', req.sessionID);
         console.log('Session data:', JSON.stringify(req.session, null, 2));
         console.log('====================================');
+        */
         
         if (req.session && req.session.user) {
             console.log(`Found authenticated user: ${JSON.stringify(req.session.user)}`);
