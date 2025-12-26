@@ -11,6 +11,8 @@ It's an all-in-one solution to backup important files and memories yet very simp
     - image thumbnail generator
     - image metadata API support for EXIF and XMP
     - digital camera raw file formats support for thumbs
+    - user management 
+    - root directories share management 
 * Embedded WebDAV explorer web application, optimized for mobile. [More info](https://github.com/hironico/nico.drive.client)
 * Multi protocol authentication support : basic and oauth can be used at the same time
 
@@ -97,5 +99,6 @@ code, libraries used etc...
 * Thumbnail library is [SHARP](https://www.npmjs.com/package/sharp)
 * Original Digital Camera RAW file support from dcraw : https://www.dechifro.org/dcraw/
 * Advanced Digital Camera RAW file support provided via [LibRaw](https://github.com/LibRaw/LibRaw/)
+
 
 
