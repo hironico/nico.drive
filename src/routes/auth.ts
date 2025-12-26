@@ -145,7 +145,7 @@ export const register = (app: express.Express): void => {
                 email: oidcUser.email,
                 name: oidcUser.name,
                 roles: oidcUser.roles,
-                quota: oidcUser.quota ? oidcUser.quota * 1024 * 1024 * 1024 : 0, // in bytes
+                quota: oidcUser.quota || 0, // Keep in GB as received from Keycloak
             };
             req.session.idToken = idToken;
 

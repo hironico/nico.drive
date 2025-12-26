@@ -16,6 +16,8 @@ import * as metadataApi from "./routes/metadata";
 import * as metricsApi from "./routes/metrics";
 import * as zipApi from "./routes/zip";
 import * as shareApi from "./routes/share";
+import * as userManagementApi from "./routes/usermanagement";
+import * as rootDirsApi from "./routes/rootdirs";
 
 import { afterPUTListener } from "./requestlistener/afterPUTListener";
 import { beforeDELETEListener } from "./requestlistener/beforeDELETEListener";
@@ -67,7 +69,10 @@ const corsOptions : CorsOptions= {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
-// Configure session middleware  
+// Parse JSON bodies for API requests
+app.use(express.json());
+
+// Configure session middleware
 const memoryStore = new session.MemoryStore();
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-session-secret-change-this-in-production',
@@ -179,6 +184,8 @@ metadataApi.register(app);
 metricsApi.register(app);
 zipApi.register(app);
 shareApi.register(app);
+userManagementApi.register(app);
+rootDirsApi.register(app);
 
 // configure the users, the webdav server root directories and their quota from the config file
 refreshUserConfig(app);

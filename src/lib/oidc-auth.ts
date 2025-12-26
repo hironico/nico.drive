@@ -65,7 +65,7 @@ export class OIDCAuthService {
         const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
         
         const authUrl = client.buildAuthorizationUrl(this.config, {
-            scope: 'openid profile email',
+            scope: 'openid profile email roles',
             code_challenge: codeChallenge,
             code_challenge_method: 'S256',
             state: state,

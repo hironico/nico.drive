@@ -265,7 +265,23 @@ export const refreshUserConfig = (app: Express) : void => {
 
     // configure users for app
     console.log('Setup DAV user : ' + user.username);
-    const managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+    
+    // Get existing user or add new one
+    let managedUser: IUser;
+    app.locals.userManager.getUserByName(user.username, (error: Error, existingUser: IUser) => {
+        if (existingUser) {
+            managedUser = existingUser;
+            console.log(`Updating existing user: ${user.username}`);
+        } else {
+            managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+            console.log(`Adding new user: ${user.username}`);
+        }
+    });
+    
+    // If managedUser is not set (synchronous issue), try adding
+    if (!managedUser) {
+        managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+    }
 
     // configure privileges for the root directories mapped names of that user. 
     let currentReservedBytes = 0;
