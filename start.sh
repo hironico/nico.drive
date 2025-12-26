@@ -1,5 +1,10 @@
 #!/bin/bash
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+# ensure we change the current working directory to script dir
+# so that node can find the config file
+cd ${SCRIPT_DIR}
+
 echo "Updating missing library (if required...)"
 npm install
 
@@ -25,11 +30,5 @@ then
     export LD_LIBRARY_PATH=./tools/.:$LD_LIBRARY_PATH
 fi
 
-nohup node . > $LOG_FILE 2>&1 &
-PID=$!
-
-echo $PID > nicodrive.pid
-
-echo "Log file is: $LOG_FILE"
-echo "nico.drive server started with PID=$PID !"
+node ./dist/index.js > $LOG_FILE 2>&1 
 

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { Express } from 'express';
-import { v2 as webdav } from "webdav-server";
+import { v2 as webdav, IUser } from "webdav-server";
 import { dirSize } from './fileutils';
 import { UserConfig, UserConfigFile } from '../models/UserConfig';
 import { unescape } from 'querystring';
@@ -210,6 +210,53 @@ export const userExists = (username: string): boolean => {
 };
 
 /**
+ * Configure privileges for shared directories based on public flag and specific shares
+ * @param app Express server application with privilegeManager
+ */
+export const configureSharedDirectoryPrivileges = (app: Express): void => {
+    const usersConfig = loadUsers();
+    
+    // Iterate through all users and their directories
+    usersConfig.users.forEach(owner => {
+        owner.rootDirectories.forEach(rootDir => {
+            const rootDirPath = rootDir.name.startsWith('/') ? `/${owner.username}${rootDir.name}` : `/${owner.username}/${rootDir.name}`;
+            
+            // Handle public directories - give read access to all other users
+            if (rootDir.isPublic === true) {
+                console.log(`Setting up public read access for: ${rootDirPath}`);
+                usersConfig.users.forEach(otherUser => {
+                    if (otherUser.uid !== owner.uid) {
+                        app.locals.userManager.getUserByName(otherUser.username, (error: Error, managedUser: IUser) => {
+                            if (!error && managedUser) {
+                                app.locals.privilegeManager.setRights(managedUser, rootDirPath, ['canRead']);
+                                console.log(`  -> Granted read access to ${otherUser.username} for ${rootDirPath}`);
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Handle specific user shares
+            if (rootDir.shares && rootDir.shares.length > 0) {
+                rootDir.shares.forEach(share => {
+                    // Find the target user
+                    const targetUser = usersConfig.users.find(u => u.uid === share.uid);
+                    if (targetUser) {
+                        app.locals.userManager.getUserByName(targetUser.username, (error: Error, managedUser: IUser) => {
+                            if (!error && managedUser) {
+                                const roles = share.access === 'canWrite' ? ['canRead', 'canWrite'] : ['canRead'];
+                                app.locals.privilegeManager.setRights(managedUser, rootDirPath, roles);
+                                console.log(`Granted ${share.access} access to ${targetUser.username} for ${rootDirPath}`);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+};
+
+/**
  * Reset the quota and privileges for all users from the users config file into the express application.
  * @param app Express server application to update locals privilegeManager and quotaManager
  */
@@ -218,7 +265,23 @@ export const refreshUserConfig = (app: Express) : void => {
 
     // configure users for app
     console.log('Setup DAV user : ' + user.username);
-    const managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+    
+    // Get existing user or add new one
+    let managedUser: IUser;
+    app.locals.userManager.getUserByName(user.username, (error: Error, existingUser: IUser) => {
+        if (existingUser) {
+            managedUser = existingUser;
+            console.log(`Updating existing user: ${user.username}`);
+        } else {
+            managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+            console.log(`Adding new user: ${user.username}`);
+        }
+    });
+    
+    // If managedUser is not set (synchronous issue), try adding
+    if (!managedUser) {
+        managedUser = app.locals.userManager.addUser(user.username, user.password, false);
+    }
 
     // configure privileges for the root directories mapped names of that user. 
     let currentReservedBytes = 0;
@@ -259,4 +322,7 @@ export const refreshUserConfig = (app: Express) : void => {
     app.locals.quotaManager.setUserLimit(managedUser, user.quota * 1024 * 1024 * 1024);
     app.locals.quotaManager.setUserReserved(managedUser, currentReservedBytes);
 });
+
+    // After all users and directories are configured, set up shared directory privileges
+    configureSharedDirectoryPrivileges(app);
 }
