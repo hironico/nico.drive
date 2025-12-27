@@ -217,14 +217,19 @@ export const generateAndSaveImageFromHeic = (inputFilename: string, targetFilena
 
         fspromise.readFile(inputFilename)
         .then(inputBuffer => {
+            const buffer2 = inputBuffer.buffer.slice(inputBuffer.byteOffset, inputBuffer.byteOffset + inputBuffer.byteLength);
             return convert({
-                buffer: inputBuffer.buffer.slice(inputBuffer.byteOffset, inputBuffer.byteOffset + inputBuffer.byteLength),
+                // see https://github.com/catdad-experiments/heic-convert/issues/34#issuecomment-2720979756
+                buffer: new Uint8Array(buffer2) as unknown as ArrayBuffer,
                 format: 'JPEG',
                 quality: 8
             })
         }).then(outputBuffer => {            
             return fspromise.writeFile(targetFilename, new Uint8Array(outputBuffer));
         }).then(() => resolve(targetFilename))
-        .catch(error => reject(error));
+        .catch(error => {
+            console.error(error);
+            return reject(error)
+        });
     });
 }
