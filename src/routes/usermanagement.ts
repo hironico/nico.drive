@@ -4,6 +4,7 @@ import { UserConfig } from "../models/UserConfig";
 import { randomUUID } from "crypto";
 import { mkdirSync, rmSync } from "fs";
 import { IRootDirectory } from "../models/IRootDirectory";
+import { v2 as webdav } from "webdav-server";
 
 // Middleware to check if user is authenticated and has admin role
 const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -31,7 +32,7 @@ export const register = (app: express.Express): void => {
                 // Get quota used from quota manager
                 let quotaUsedBytes = 0;
                 try {
-                    app.locals.userManager.getUserByName(user.username, (error: Error, managedUser: any) => {
+                    app.locals.userManager.getUserByName(user.username, (error: Error, managedUser: webdav.IUser) => {
                         if (!error && managedUser) {
                             quotaUsedBytes = app.locals.quotaManager.getUserReserved(managedUser);
                         }
@@ -77,7 +78,7 @@ export const register = (app: express.Express): void => {
             // Get quota used from quota manager
             let quotaUsedBytes = 0;
             try {
-                app.locals.userManager.getUserByName(user.username, (error: Error, managedUser: any) => {
+                app.locals.userManager.getUserByName(user.username, (error: Error, managedUser: webdav.IUser) => {
                     if (!error && managedUser) {
                         quotaUsedBytes = app.locals.quotaManager.getUserReserved(managedUser);
                     }
