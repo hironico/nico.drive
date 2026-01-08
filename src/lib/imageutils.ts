@@ -20,11 +20,11 @@ export type ThumbRequest = {
     resizeFit: keyof sharp.FitEnum;
 }
 
-export const getCachedImageFilename = (sourceFilename: string, width: string, height: string, resizeFit: string, server?: webdav.WebDAVServer, ctx?: webdav.RequestContext): Promise<string> => {
+export const getCachedImageFilename = (sourceFilename: string, width: string, height: string, resizeFit: string, server?: webdav.WebDAVServer, davResource?: string, username?: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
-        // If server and context are provided, use WebDAV property manager for caching
-        if (server && ctx) {
-            getMd5WithCache(server, ctx, sourceFilename)
+        // If server is provided, use WebDAV property manager for caching
+        if (server) {
+            getMd5WithCache(server, davResource, sourceFilename, username)
                 .then(md5Sum => {
                     resolve(`${process.env.THUMBS_REPOSITORY_PATH}/${md5Sum}_${width}x${height}-${resizeFit}`);
                 }).catch(error => reject(error));

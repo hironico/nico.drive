@@ -56,10 +56,10 @@ const sendThumb = (req: express.Request, res: express.Response, next: express.Ne
 const getCachedFilename = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const server = req.app.locals.webdav as webdav.WebDAVServer | undefined;
     
-    // Create an external request context for property access
-    const ctx = server ? webdav.ExternalRequestContext.create(server) : undefined;
-    
-    getCachedImageFilename(req.body.fullFilename, req.body.width, req.body.height, req.body.resizeFit, server, ctx as webdav.RequestContext | undefined)
+    const davResource = `${req.body.homeDir}${req.body.filename}`;
+    const username = req.body.username;
+
+    getCachedImageFilename(req.body.fullFilename, req.body.width, req.body.height, req.body.resizeFit, server, davResource, username)
     .then(cachedFilename => {
         req.body['cachedFilename'] = cachedFilename;
         next();

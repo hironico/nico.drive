@@ -301,10 +301,11 @@ export const refreshUserConfig = (app: Express) : void => {
         try {
                 fs.statSync(rootDir.physicalPath);
     
-                const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
+                //const rootDirName = rootDir.name.startsWith('/') ? `/${user.username}${rootDir.name}` : `/${user.username}/${rootDir.name}`;
     
                 const webdavserver = app.locals.webdav as webdav.WebDAVServer;
-                webdavserver.setFileSystem(rootDirName, new webdav.PhysicalFileSystem(rootDir.physicalPath), (success) => {
+                const davFs = new webdav.PhysicalFileSystem(rootDir.physicalPath);
+                webdavserver.setFileSystem(rootDirName, davFs, (success) => {
                     if (success) {
                         console.log(`User directory mounted: ${rootDirName} -> ${rootDir.physicalPath}`);
                     } else {

@@ -15,39 +15,57 @@ const MD5_PROPERTY_NAME = 'md5';
  * @param server The WebDAV server instance
  * @param ctx Request context
  * @param resourcePath Path to the resource
+ * @param fullFilename path to the physical filename corresponding to the resrouce
  * @returns Promise<string> MD5 checksum as hex string
  */
-export const getMd5WithCache = (server: webdav.WebDAVServer, ctx: webdav.RequestContext, resourcePath: string): Promise<string> => {
+export const getMd5WithCache = (server: webdav.WebDAVServer, resourcePath: string, fullFilename: string, username: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
-        const path = new webdav.Path(resourcePath);
+        const fullResourceName = `/${username}${resourcePath}`;        
+        const path = new webdav.Path(fullResourceName);
         
-        server.getFileSystem(path, (fs, _, subPath) => {
+        console.log(`Found path for resource. ${JSON.stringify(path)}`);
+
+        server.getFileSystem(path, (fs, _rootPath, subPath) => {
             if (!fs) {
                 reject(`Filesystem not found for path: ${resourcePath}`);
                 return;
             }
 
+            const ctx = webdav.ExternalRequestContext.create(server);
+            ctx.user = {
+                uid: username,
+                username: username
+            };
+            ctx.overridePrivileges = true;
+
             fs.propertyManager(ctx, subPath, (error, propertyManager) => {
                 if (error) {
                     console.warn(`Could not get property manager for ${resourcePath}: ${error}`);
                     // Fall back to calculating MD5 without caching
-                    calculateMd5(resourcePath)
+                    calculateMd5(fullFilename)
                         .then(md5Sum => resolve(md5Sum))
                         .catch(err => reject(err));
                     return;
                 }
 
-                // Try to get cached MD5
-                propertyManager.getProperty(MD5_PROPERTY_NAME, (err, value) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-                    if (!err && value && typeof value === 'string' && value.length === 32) {
-                        console.log(`Using cached MD5 for: ${resourcePath} => ${value}`);
-                        resolve(value);
-                    } else {
+                propertyManager.getProperties((error, props) => {
+                    if (error) {
                         // Not cached, calculate and store
-                        console.log(`No cached MD5 found for: ${resourcePath}, calculating...`);
-                        calculateAndStoreMd5(server, ctx, resourcePath)
+                        console.error(`Error Getting resoource properties, for: ${resourcePath}, calculating for physical filename: ${fullFilename}...`);
+                        calculateAndStoreMd5(server, ctx, path, fullFilename)
                             .then(md5Sum => resolve(md5Sum))
-                            .catch(err => reject(err));
+                            .catch(err => reject(err)); 
+                    } else {
+                        if (props[MD5_PROPERTY_NAME]) {
+                            const value = props[MD5_PROPERTY_NAME].value as string;
+                            console.debug(`Using cached MD5 for: ${resourcePath} => ${value}`);
+                            resolve(value);
+                        } else {
+                            console.debug(`No cached property found for: ${resourcePath}, calculating for physical filename: ${fullFilename}...`);
+                            calculateAndStoreMd5(server, ctx, path, fullFilename)
+                                .then(md5Sum => resolve(md5Sum))
+                                .catch(err => reject(err)); 
+                        }
                     }
                 });
             });
@@ -59,36 +77,35 @@ export const getMd5WithCache = (server: webdav.WebDAVServer, ctx: webdav.Request
  * Calculate MD5 checksum and store it as a WebDAV property
  * @param server The WebDAV server instance
  * @param ctx Request context
- * @param resourcePath Path to the resource
+ * @param webdavPath WebDAV Path object (already resolved by server)
+ * @param physicalPath Physical file path (for MD5 calculation)
  * @returns Promise<string> MD5 checksum as hex string
  */
-export const calculateAndStoreMd5 = (server: webdav.WebDAVServer, ctx: webdav.RequestContext, resourcePath: string): Promise<string> => {
+export const calculateAndStoreMd5 = (server: webdav.WebDAVServer, ctx: webdav.RequestContext, webdavPath: webdav.Path, physicalPath: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
-        // Calculate MD5 first
-        calculateMd5(resourcePath)
+        // Calculate MD5 first from physical path
+        calculateMd5(physicalPath)
             .then(md5Sum => {
-                // Store it in WebDAV properties
-                const path = new webdav.Path(resourcePath);
-                
-                server.getFileSystem(path, (fs, _, subPath) => {
+                // Store it in WebDAV properties using the resolved WebDAV path
+                server.getFileSystem(webdavPath, (fs, _, subPath) => {
                     if (!fs) {
-                        console.warn(`Filesystem not found for ${resourcePath}, MD5 calculated but not cached`);
+                        console.warn(`Filesystem not found for ${webdavPath.toString()}, MD5 calculated but not cached`);
                         resolve(md5Sum);
                         return;
                     }
 
                     fs.propertyManager(ctx, subPath, (error, propertyManager) => {
                         if (error) {
-                            console.warn(`Could not get property manager to store MD5 for ${resourcePath}: ${error}`);
+                            console.warn(`Could not get property manager to store MD5 for ${webdavPath.toString()}: ${error}`);
                             resolve(md5Sum);
                             return;
                         }
 
                         propertyManager.setProperty(MD5_PROPERTY_NAME, md5Sum, {}, (err) => {
                             if (err) {
-                                console.warn(`Could not store MD5 property for ${resourcePath}: ${err}`);
+                                console.warn(`Could not store MD5 property for ${webdavPath.toString()}: ${err}`);
                             } else {
-                                console.log(`MD5 calculated and cached for: ${resourcePath} => ${md5Sum}`);
+                                console.log(`MD5 calculated and cached for: ${webdavPath.toString()} => ${md5Sum}`);
                             }
                             resolve(md5Sum);
                         });
@@ -96,7 +113,7 @@ export const calculateAndStoreMd5 = (server: webdav.WebDAVServer, ctx: webdav.Re
                 });
             })
             .catch(error => {
-                console.error(`Error calculating MD5 for ${resourcePath}:`, error);
+                console.error(`Error calculating MD5 for ${physicalPath}:`, error);
                 reject(error);
             });
     });

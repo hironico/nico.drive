@@ -22,7 +22,9 @@ export const afterPUTListener: RequestListener = (arg, next) => {
         const resizeFit = 'cover';
         
         // Calculate and store MD5 as WebDAV property for future use
-        calculateAndStoreMd5(arg.server, arg, fullFilename)
+        // Use the resolved WebDAV Path object from the request context
+        const webdavPath = arg.requested.path;
+        calculateAndStoreMd5(arg.server, arg, webdavPath, fullFilename)
             .then(md5Sum => {
                 console.log(`MD5 stored for uploaded file: ${fullFilename} => ${md5Sum}`);
             })
