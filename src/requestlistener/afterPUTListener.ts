@@ -2,6 +2,7 @@ import { findPhysicalPath } from "../lib/auth";
 import { RequestListener } from "webdav-server/lib/server/v2/webDAVServer/BeforeAfter";
 import { isFileSupported } from "../lib/fileutils";
 import { generateAndSaveThumb } from "../lib/imageutils";
+import { calculateAndStoreMd5 } from "../lib/md5cache";
 
 // AFTER the webdav server did its job then we would like to generqte thumbs for supported images.
 // That way, the thumb api will not have to regenerate it on the fly.
@@ -18,7 +19,19 @@ export const afterPUTListener: RequestListener = (arg, next) => {
         const relativeFileName = pathElements.join('/');
         const homeDirPhysicalPath = findPhysicalPath(username, homeDirName);
         const fullFilename = decodeURIComponent(decodeURI(`${homeDirPhysicalPath}/${relativeFileName}`));
-        const resizeFit = 'cover';    
+        const resizeFit = 'cover';
+        
+        // Calculate and store MD5 as WebDAV property for future use
+        // Use the resolved WebDAV Path object from the request context
+        const webdavPath = arg.requested.path;
+        calculateAndStoreMd5(arg.server, arg, webdavPath, fullFilename)
+            .then(md5Sum => {
+                console.log(`MD5 stored for uploaded file: ${fullFilename} => ${md5Sum}`);
+            })
+            .catch(error => {
+                console.warn(`Could not store MD5 for ${fullFilename}: ${error}`);
+            });
+        
         if (isFileSupported(fullFilename)) {
             generateAndSaveThumb(fullFilename, 200, 200, resizeFit)
             .then(_outputFileName => {// eslint-disable-line @typescript-eslint/no-unused-vars
