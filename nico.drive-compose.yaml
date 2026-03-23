@@ -1,0 +1,36 @@
+services:
+  nicodrive:
+    container_name: hironico-nicodrive
+    hostname: hironico-nicodrive
+    image: docker.io/hironico/nicodrive:7.14.1
+    restart: always    
+    volumes:
+      - ./server.crt.pem:/app/nico.drive/server.crt.pem
+      - ./server.key.pem:/app/nico.drive/server.key.pem
+      - ./.env.docker:/app/nico.drive/.env
+      - /Users/n.ramousse/webdav/:/app/webdav_home/
+      - ./users_config_docker.json:/app/nico.drive/users_config.json:rw,z
+      - /tmp/nicodrive/thumbs:/app/thumbs/:rw,z
+    ports:
+      - "3443:3000" # host port 3443 must correcpond to .env.docker port in redirections !
+    networks:
+      - hironico-network
+      
+        
+networks:
+  hironico-network:
+    name: hironico-network
+    driver: bridge
+    external: true
+
+# First create 
+# - the .env file 
+# - the cert.pem and key.pem certificates (PRODUCTION use letsencrypt)
+
+# Map the above files with volumes bindings
+
+# Check the port mapping to correspond to env file setup
+
+# run with the follwing command :
+# podman compose -f nico.drive-compose.yaml up -d
+
