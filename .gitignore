@@ -5,7 +5,7 @@ node_modules/
 
 .npmrc
 
-.env
+.env*
 
 server.cert
 server.key
@@ -16,7 +16,7 @@ tools/dcraw
 
 **/*.pem
 
-**/users_config.json
+**/users_config*.json
 
 tmp/
 
