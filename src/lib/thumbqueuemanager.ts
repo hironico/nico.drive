@@ -45,7 +45,8 @@ export class QueueManager {
 
       try {
         // launch thumb request in a separated thread instead of the event queue of nodejs
-        const w = new Worker('./src/lib/workerlauncher_thumbgen.js', {
+        // NOTE: The application must have been build 
+        const w = new Worker('./dist/lib/workerlauncher_thumbgen.js', {
           workerData: {
             request: item.request
           }

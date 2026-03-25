@@ -4,6 +4,7 @@ import { constants, createReadStream as fsCreateReadStream } from "fs";
 import fspromise from "fs/promises";
 import sharp from "sharp";
 import { findPhysicalPath } from "../lib/auth";
+import { v2 as webdav } from "webdav-server";
 
 import { isFileSupported } from "../lib/fileutils";
 import { getCachedImageFilename, ThumbRequest } from "../lib/imageutils";
@@ -52,8 +53,13 @@ const sendThumb = (req: express.Request, res: express.Response, next: express.Ne
     });    
 }
 
-const getCachedFilename = (req: express.Request, res: express.Response, next: express.NextFunction) => { 
-    getCachedImageFilename(req.body.fullFilename, req.body.width, req.body.height, req.body.resizeFit)
+const getCachedFilename = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const server = req.app.locals.webdav as webdav.WebDAVServer | undefined;
+    
+    const davResource = `${req.body.homeDir}${req.body.filename}`;
+    const username = req.body.username;
+
+    getCachedImageFilename(req.body.fullFilename, req.body.width, req.body.height, req.body.resizeFit, server, davResource, username)
     .then(cachedFilename => {
         req.body['cachedFilename'] = cachedFilename;
         next();

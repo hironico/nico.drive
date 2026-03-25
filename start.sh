@@ -8,7 +8,7 @@ cd ${SCRIPT_DIR}
 echo "Updating missing library (if required...)"
 npm install
 
-echo "Building nico.drive server before any launch to make sure server is upto date !"
+echo "Building nico.drive server before any launch to make sure server is up to date !"
 npm run build
 ret=$?
 
@@ -30,5 +30,6 @@ then
     export LD_LIBRARY_PATH=./tools/.:$LD_LIBRARY_PATH
 fi
 
-node ./dist/index.js > $LOG_FILE 2>&1 
+# use exec to replace the shell so that supervisord can follow up the process.
+exec node ./dist/index.js > $LOG_FILE 2>&1 
 

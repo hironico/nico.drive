@@ -7,7 +7,9 @@ import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync }
 import child_process, { SpawnSyncOptions } from 'child_process';
 import os from "os";
 import { constants, writeFileSync, statSync } from "fs";
-import { isHeicFile, isRawFile, md5 } from "./fileutils";
+import { isHeicFile, isRawFile, md5 as calculateMd5 } from "./fileutils";
+import { getMd5WithCache } from "./md5cache";
+import { v2 as webdav } from "webdav-server";
 import sharp from "sharp";
 import convert from 'heic-convert';
 
@@ -18,12 +20,21 @@ export type ThumbRequest = {
     resizeFit: keyof sharp.FitEnum;
 }
 
-export const getCachedImageFilename = (sourceFilename: string, width: string, height: string, resizeFit: string): Promise<string> => {
+export const getCachedImageFilename = (sourceFilename: string, width: string, height: string, resizeFit: string, server?: webdav.WebDAVServer, davResource?: string, username?: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
-        md5(sourceFilename)
-            .then(md5Sum => {
-                resolve(`${process.env.THUMBS_REPOSITORY_PATH}/${md5Sum}_${width}x${height}-${resizeFit}`);
-            }).catch(error => reject(error));
+        // If server is provided, use WebDAV property manager for caching
+        if (server) {
+            getMd5WithCache(server, davResource, sourceFilename, username)
+                .then(md5Sum => {
+                    resolve(`${process.env.THUMBS_REPOSITORY_PATH}/${md5Sum}_${width}x${height}-${resizeFit}`);
+                }).catch(error => reject(error));
+        } else {
+            // Fallback to direct MD5 calculation without caching
+            calculateMd5(sourceFilename)
+                .then(md5Sum => {
+                    resolve(`${process.env.THUMBS_REPOSITORY_PATH}/${md5Sum}_${width}x${height}-${resizeFit}`);
+                }).catch(error => reject(error));
+        }
     });
 }
 
