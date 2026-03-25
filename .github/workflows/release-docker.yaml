@@ -13,22 +13,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Installer QEMU pour l’émulation multi‑arch
+      # 2. Installer Node.js (version à aligner avec celle du docker file)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      # 3. Installer les dépendances
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Build de l'application
+      - name: Build application
+        run: npm run build
+
+      # 5. Installer QEMU pour l’émulation multi‑arch
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # 3. Setup Buildx (builder multi‑arch)
+      # 6. Setup Buildx (builder multi‑arch)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 4. Connexion à Docker Hub
+      # 7. Connexion à Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 5. Génération des tags
+      # 8. Génération des tags
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -42,7 +57,7 @@ jobs:
           flavor: |
             latest=true
 
-      # 6. Build & Push multi‑arch
+      # 9. Build & Push multi‑arch
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
         with:
