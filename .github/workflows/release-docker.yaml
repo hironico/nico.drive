@@ -31,7 +31,7 @@ jobs:
       # 5. Génération des tags
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: |
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/nicodrive
@@ -44,7 +44,7 @@ jobs:
 
       # 6. Build & Push multi‑arch
       - name: Build and push multi-arch image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./nico.drive.Dockerfile
