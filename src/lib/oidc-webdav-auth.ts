@@ -3,6 +3,7 @@ import { HTTPRequestContext } from 'webdav-server/lib/server/v2/RequestContext';
 import { IUser } from 'webdav-server/lib/user/v2/IUser';
 import { SimpleUser } from 'webdav-server/lib/user/v2/simple/SimpleUser';
 import { loadUsers } from './auth';
+import argon2 from 'argon2';
 
 export class OIDCWebDAVAuthentication implements HTTPAuthentication {
     private realm: string;
@@ -39,23 +40,32 @@ export class OIDCWebDAVAuthentication implements HTTPAuthentication {
 
         try {
             const credentials = Buffer.from(authorization.substring(6), 'base64').toString('utf-8');
-            const [username, password] = credentials.split(':');
+            const colonIndex = credentials.indexOf(':');
+            if (colonIndex === -1) {
+                return callback(new Error('Invalid credentials format'));
+            }
+            const username = credentials.substring(0, colonIndex);
+            const password = credentials.substring(colonIndex + 1);
 
             if (!username || !password) {
                 return callback(new Error('Invalid credentials format'));
             }
 
-            // Check credentials against users_config.json
-            const configUser = loadUsers().users.find(u => 
-                u.username === username && u.password === password
-            );
-
-            if (configUser) {
-                const user = new SimpleUser(username, password, false, false);
-                callback(null, user);
-            } else {
-                callback(new Error('Invalid credentials'));
+            // Find the user by username first, then verify password hash with argon2
+            const configUser = loadUsers().users.find(u => u.username === username);
+            if (!configUser) {
+                return callback(new Error('Invalid credentials'));
             }
+
+            argon2.verify(configUser.password, password).then(isValid => {
+                if (isValid) {
+                    callback(null, new SimpleUser(username, configUser.password, false, false));
+                } else {
+                    callback(new Error('Invalid credentials'));
+                }
+            }).catch(() => {
+                callback(new Error('Authentication failed'));
+            });
         } catch (error) {
             callback(new Error('Authentication failed'));
         }

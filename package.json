@@ -30,6 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "archiver": "^7.0.1",
+    "argon2": "^0.44.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "exif-heic-js": "^1.0.2",

@@ -2,7 +2,7 @@
     "users": [
         {
             "username": "hironico",
-            "password": "hironico",
+            "password": "$argon2id$v=19$m=65536,t=3,p=4$/z/MzT1GoHyV7pnZdF0y2Q$47vZMA8EChOf4/0JgmKnkCxqlhNmtWvE6QJcW+KqSdc",
             "quota": 539091200,
             "rootDirectories": [
                 {

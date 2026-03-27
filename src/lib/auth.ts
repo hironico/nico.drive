@@ -5,6 +5,7 @@ import { v2 as webdav, IUser } from "webdav-server";
 import { dirSize } from './fileutils';
 import { UserConfig, UserConfigFile } from '../models/UserConfig';
 import { unescape } from 'querystring';
+import argon2 from 'argon2';
 
 export const loadUsers = () : UserConfigFile => {
     const configPath = path.join(process.env.DAV_USERS_CONFIG);
@@ -28,9 +29,8 @@ export const findPhysicalPath = (username: string, homeDir: string): string => {
     return homeDirPhysicalPath[0][0];
 }
 
-export const basicAuthHandler = (usr: string, pwd: string) : boolean => {
+export const basicAuthHandler = async (usr: string, pwd: string): Promise<boolean> => {
     // console.log(`Check basic auth for user: ${usr}`);
-    // console.log(`Usrs config has ${usersConfig.users.length} registered users.`);
 
     const usersConfig = loadUsers();
 
@@ -38,9 +38,23 @@ export const basicAuthHandler = (usr: string, pwd: string) : boolean => {
     if (typeof matchingUsers === 'undefined' || matchingUsers.length !== 1) {
         return false;
     }
-    
+
     const user = matchingUsers[0];
-    return user.password === pwd;
+    try {
+        return await argon2.verify(user.password, pwd);
+    } catch (error) {
+        console.error(`Error verifying password for user ${usr}:`, error);
+        return false;
+    }
+}
+
+/**
+ * Hash a plain-text password using argon2.
+ * @param plainPassword The plain-text password to hash
+ * @returns Promise<string> The argon2 hash of the password
+ */
+export const hashPassword = async (plainPassword: string): Promise<string> => {
+    return argon2.hash(plainPassword);
 }
 
 /**
@@ -93,10 +107,13 @@ export const addUser = async (userData: UserConfig): Promise<boolean> => {
             return false;
         }
 
+        // Hash password with argon2 before storing
+        const hashedPassword = await argon2.hash(userData.password);
+
         // Create new user object
         const newUser: UserConfig  = {
             username: userData.username,
-            password: userData.password,
+            password: hashedPassword,
             quota: (userData.quota * 1073741824) || 1073741824, // quota in GB x 1073741824; Default 1GB if not specified
             rootDirectories: userData.rootDirectories,
             uid: userData.uid,
@@ -162,6 +179,11 @@ export const updateUser = async (username: string, userData: Partial<UserConfig>
         if (userIndex === -1) {
             console.error(`User ${username} not found`);
             return false;
+        }
+
+        // Hash password with argon2 if it is being updated
+        if (userData.password) {
+            userData.password = await argon2.hash(userData.password);
         }
 
         // Update user data
