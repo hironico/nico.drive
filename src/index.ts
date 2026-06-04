@@ -25,6 +25,7 @@ import { afterLogListener } from "./requestlistener/afterLogListener";
 import { PerUserQuotaStorageManager } from "./lib/quota";
 import { OIDCWebDAVAuthentication } from "./lib/oidc-webdav-auth";
 import { refreshUserConfig } from "./lib/auth";
+import { SocketIOServer } from "./lib/socketio";
 
 // if no .env file found then no need to go further
 try {
@@ -193,19 +194,23 @@ refreshUserConfig(app);
 // activate webdav server as an expressjs handler
 app.use(webdav.extensions.express(process.env.DAV_WEB_CONTEXT, server));
 
-// create HTTPS server only if enabled in the configuration
-// see dotenv-sample file for instructions about SSL and HTTPS
+// create the HTTP server explicitly so we can attach Socket.IO to it
+let httpServer: http.Server;
 if (process.env.SERVER_SSL_ENABLED === 'true') {
-    https.createServer({
+    httpServer = https.createServer({
         key: fs.readFileSync(process.env.SERVER_SSL_KEY_FILE),
         cert: fs.readFileSync(process.env.SERVER_SSL_CERT_FILE)
-    }, app).listen(port, () => {
-        // tslint:disable-next-line:no-console
-        console.log(`Server started at https://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
-    });
+    }, app);
 } else {
-    http.createServer(app).listen(port, () => {
-        // tslint:disable-next-line:no-console
-        console.log(`Development server started at http://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
-    })
+    httpServer = http.createServer(app);
 }
+
+// initialize Socket.IO server on the same HTTP server
+const socketIOServer = new SocketIOServer(app, httpServer);
+app.locals.socketIO = socketIOServer;
+
+// start listening
+httpServer.listen(port, () => {
+    const proto = process.env.SERVER_SSL_ENABLED === 'true' ? 'https' : 'http';
+    console.log(`Server started at ${proto}://localhost:${port}${process.env.DAV_WEB_CONTEXT}`);
+});

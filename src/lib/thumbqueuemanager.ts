@@ -1,31 +1,40 @@
 import { ThumbRequest } from "./imageutils";
 import { Worker } from 'worker_threads';
 import dotenv from 'dotenv';
+import { SocketIOServer } from "./socketio";
 
 dotenv.config();
 
 export type ThumbTask = {
   id: string;
   request: ThumbRequest;
+  username: string;
+  homeDir: string;
+  requestId: string;
 }
 
 export class QueueManager {
   private queue: Array<ThumbTask> = [];
   private processing: Set<string> = new Set();
   private maxConcurrent: number;
+  private socketIO: SocketIOServer | null = null;
   public isProcessing: boolean = false;
 
   constructor(maxConcurrent: number = 3) {
     this.maxConcurrent = maxConcurrent;
   }
 
+  public setSocketIO(socketIO: SocketIOServer): void {
+    this.socketIO = socketIO;
+  }
+
   public isTaskQueued(id: string): boolean {
     return this.queue.some(item => item.id === id) || this.processing.has(id);
   }
 
-  public enqueue({ id, request }: ThumbTask): void {
-    if (!this.isTaskQueued(id)) {
-      this.queue.push({ id, request });
+  public enqueue(task: ThumbTask): void {
+    if (!this.isTaskQueued(task.id)) {
+      this.queue.push(task);
     }
 
     // is there any room for processing this
@@ -63,8 +72,21 @@ export class QueueManager {
             console.log(`WARNING: thumb generator thread exited with return code: ${code}`);
           }
 
-          // finshed processing, so make room for next item to process
+          // finished processing, so make room for next item to process
           this.processing.delete(item.id);
+
+          // emit socket.io notification so the client knows the thumb is ready
+          if (this.socketIO) {
+            this.socketIO.emitThumbReady({
+              requestId: item.requestId,
+              filename: item.request.fullFilename,
+              width: item.request.width,
+              height: item.request.height,
+              resizeFit: item.request.resizeFit,
+              username: item.username,
+              homeDir: item.homeDir
+            });
+          }
 
           // is there anything to process and room available ?
           if (this.processing.size < this.maxConcurrent && this.getQueueLength() > 0) {

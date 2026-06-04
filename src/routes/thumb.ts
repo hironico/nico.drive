@@ -10,8 +10,9 @@ import { isFileSupported } from "../lib/fileutils";
 import { getCachedImageFilename, ThumbRequest } from "../lib/imageutils";
 
 import { QueueManager } from "../lib/thumbqueuemanager";
+import { SocketIOServer } from "../lib/socketio";
 
-// one signle insttance of queue manager
+// one single instance of queue manager
 const thumbQueueManager = new QueueManager(Number.parseInt(process.env.THUMBS_REQUEST_QUEUE_PREFETCH));
 
 const sendThumb = (req: express.Request, res: express.Response, next: express.NextFunction, failIfNotFound: boolean) => {
@@ -141,8 +142,23 @@ const generateThumb = (req: express.Request, res: express.Response) => {
         resizeFit: req.body.resizeFit
     }
 
+    // lazily wire the socketIO instance to the queue manager (it's set after routes register)
+    const sio = req.app.locals.socketIO as SocketIOServer;
+    if (sio) {
+        thumbQueueManager.setSocketIO(sio);
+    }
+
+    // build a unique requestId from the image parameters so the client can match the notification
+    const requestId = `${req.body.width}x${req.body.height}-${req.body.resizeFit}`;
+
     console.log('Sending thumb request to queue manager: ' + JSON.stringify(thumbReq));
-    thumbQueueManager.enqueue({id: thumbReq.fullFilename, request: thumbReq});
+    thumbQueueManager.enqueue({
+        id: thumbReq.fullFilename,
+        request: thumbReq,
+        username: req.body.username,
+        homeDir: req.body.homeDir,
+        requestId: requestId
+    });
 
     // do not wait for the process to finish and tell the browser to come back later
     console.log(`Thumb request to queue sent OK. Queue size: ${thumbQueueManager.getQueueLength()} / ${thumbQueueManager.getProcessingCount()} : processing: ${thumbQueueManager.isProcessing}`);
