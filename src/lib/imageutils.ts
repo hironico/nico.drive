@@ -3,10 +3,10 @@
  */
 
 import fspromise from "fs/promises";
-import { createWriteStream as fsCreateWriteStream, StatSyncOptions, unlinkSync } from "fs";
+import { createWriteStream as fsCreateWriteStream, StatSyncOptions } from "fs";
 import child_process, { SpawnSyncOptions } from 'child_process';
 import os from "os";
-import { constants, writeFileSync, statSync } from "fs";
+import { constants, statSync } from "fs";
 import { isHeicFile, isRawFile, md5 as calculateMd5 } from "./fileutils";
 import { getMd5WithCache } from "./md5cache";
 import { v2 as webdav } from "webdav-server";
@@ -23,7 +23,7 @@ export type ThumbRequest = {
 export const getCachedImageFilename = (sourceFilename: string, width: string, height: string, resizeFit: string, server?: webdav.WebDAVServer, davResource?: string, username?: string): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
         // If server is provided, use WebDAV property manager for caching
-        if (server) {
+        if (server && davResource && username) {
             getMd5WithCache(server, davResource, sourceFilename, username)
                 .then(md5Sum => {
                     resolve(`${process.env.THUMBS_REPOSITORY_PATH}/${md5Sum}_${width}x${height}-${resizeFit}`);
@@ -43,37 +43,8 @@ export const checkFileExists = (filename: string): boolean => {
         bigint: false,
         throwIfNoEntry: false
     }
-    const lockStats = statSync(filename, statsOps);
-    return (typeof lockStats !== 'undefined');
-}
-
-export const checkThumbLock = (outputFilename: string): boolean => {
-    const lockFilename = `${outputFilename.split('_')[0]}.lock`;
-    if (!checkFileExists(lockFilename)) {
-        console.log(`Putting lock file: ${lockFilename}.`);
-        writeFileSync(lockFilename, `${outputFilename} lock file`);
-        return true;
-    } else {
-        return false;
-    }
-}
-
-export const removeThumbLock = (outputFilename: string): boolean => {
-    if (outputFilename === void 0 || outputFilename === null) {
-        return true;
-    }
-    const lockFilename = `${outputFilename.split('_')[0]}.lock`;
-    const statsOps: StatSyncOptions = {
-        bigint: false,
-        throwIfNoEntry: false
-    }
-    const lockStats = statSync(lockFilename, statsOps);
-    if (typeof lockStats !== 'undefined') {
-        console.log(`Removing lock file: ${lockFilename}`);
-        unlinkSync(lockFilename);
-    }
-
-    return true;
+    const stats = statSync(filename, statsOps);
+    return (typeof stats !== 'undefined');
 }
 
 export const generateAndSaveThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum): Promise<string> => {
@@ -85,37 +56,26 @@ export const generateAndSaveThumb = (input: string, width: number, height: numbe
             });
         }
 
-        let outFilename: string = null;
         getCachedImageFilename(input, width.toString(), height.toString(), resizeFit)
             .then(outputFilename => {
                 if (checkFileExists(outputFilename)) {
                     console.log('Thumb already exists: ' + outputFilename);
                     resolve(outputFilename);
                 } else {
-                    outFilename = outputFilename;
                     return generateAndSaveFileThumb(input, width, height, resizeFit, outputFilename);
                 }
-            }).then(outputFilename => resolve(outputFilename))
-            .catch(error => reject(error))
-            .finally(() => removeThumbLock(outFilename));
+            }).then(outputFilename => resolve(outputFilename ? outputFilename : ""))
+            .catch(error => reject(error));
     });
 }
 
 export const generateAndSaveFileThumb = (input: string, width: number, height: number, resizeFit: keyof sharp.FitEnum, outputFilename: string): Promise<string> => {
-    if (checkThumbLock(outputFilename)) {
-        if (isRawFile(input)) {
-            return generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename);
-        } else if (isHeicFile(input)) {
-            return generateAndSaveHeicThumb(input, width, height, resizeFit, outputFilename);
-        } else {
-            return generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
-        }
+    if (isRawFile(input)) {
+        return generateAndSaveRawThumb(input, width, height, resizeFit, outputFilename);
+    } else if (isHeicFile(input)) {
+        return generateAndSaveHeicThumb(input, width, height, resizeFit, outputFilename);
     } else {
-        return new Promise<string>((resolve, reject) => {
-            const err = new Error(`${outputFilename} is already being generated.`);
-            err.name = 'LOCKED';
-            reject(err);
-        });
+        return generateAndSaveImageThumb(input, width, height, resizeFit, outputFilename);
     }
 }
 
@@ -189,7 +149,7 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
                 const dcraw = child_process.spawn(dcrawPath, ["-T", "+M", "-o", "2", "-h", "-Z", "-", inputFilename], options);
                 const stdErr = '';
                 const writeStream = fsCreateWriteStream(targetFilename);
-                dcraw.stdout.pipe(writeStream);
+                dcraw.stdout && dcraw.stdout.pipe(writeStream);
                 dcraw.on('close', (exitCode) => {
                     if (exitCode !== 0) {
                         const errMsg = `Error while generating raw file thumb image: ${stdErr}`;
