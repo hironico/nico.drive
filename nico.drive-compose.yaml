@@ -2,7 +2,7 @@ services:
   nicodrive:
     container_name: hironico-nicodrive
     hostname: hironico-nicodrive
-    image: docker.io/hironico/nicodrive:7.14.1
+    image: docker.io/hironico/nicodrive:7.16.3
     restart: always    
     volumes:
       - ./server.crt.pem:/app/nico.drive/server.crt.pem
