@@ -27,6 +27,7 @@ import { OIDCWebDAVAuthentication } from "./lib/oidc-webdav-auth";
 import { refreshUserConfig } from "./lib/auth";
 import { SocketIOServer } from "./lib/socketio";
 
+
 // if no .env file found then no need to go further
 try {
     fs.statSync('.env');

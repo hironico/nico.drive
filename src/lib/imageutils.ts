@@ -118,7 +118,7 @@ export const generateAndSaveImageFromRaw = (inputFilename: string, targetFilenam
         switch (os.platform()) {
             case 'linux':
                 toolsPath = './tools/dcraw_emu_linux';
-                process.env.LD_LIBRARY_PATH = `${process.env.LD_LIBRARY_PATH}:./tools/.`;
+                process.env.LD_LIBRARY_PATH = `${process.env.LD_LIBRARY_PATH}:./tools/.:/usr/lib/aarch64-linux-gnu/:/usr/lib/amd64-linux-gnu/`;
                 break;
 
             case 'win32':

@@ -61,21 +61,26 @@ export class QueueManager {
           }
         });
 
-        /*
-        w.on('message', (result) => {
-            console.log(result);
+        // Capture the success/error result posted by the worker thread
+        let workerResult: { success: boolean; error?: string } = { success: true };
+
+        w.on('message', (result: { success: boolean; error?: string }) => {
+          workerResult = result;
         });
-        */
 
         w.on('exit', (code) => {
           if (code != 0) {
             console.log(`WARNING: thumb generator thread exited with return code: ${code}`);
+            // Non-zero exit without a prior message means an uncaught crash
+            if (workerResult.success) {
+              workerResult = { success: false, error: `Worker exited with code ${code}` };
+            }
           }
 
           // finished processing, so make room for next item to process
           this.processing.delete(item.id);
 
-          // emit socket.io notification so the client knows the thumb is ready
+          // emit socket.io notification so the client knows the thumb status
           if (this.socketIO) {
             this.socketIO.emitThumbReady({
               requestId: item.requestId,
@@ -84,7 +89,9 @@ export class QueueManager {
               height: item.request.height,
               resizeFit: item.request.resizeFit,
               username: item.username,
-              homeDir: item.homeDir
+              homeDir: item.homeDir,
+              status: workerResult.success ? 'success' : 'error',
+              error: workerResult.error
             });
           }
 

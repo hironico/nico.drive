@@ -11,6 +11,8 @@ export type ThumbNotification = {
   resizeFit: string;
   username: string;
   homeDir: string;
+  status: 'success' | 'error';
+  error?: string;
 };
 
 export class SocketIOServer {
