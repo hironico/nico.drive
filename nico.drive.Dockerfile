@@ -66,12 +66,12 @@ CMD ["node", "./dist/index.js"]
 
 # --- Multi-architecture build instructions ------------------------------------
 # Initialise the manifest:
-#   podman manifest create docker.io/hironico/nicodrive:7.16.3
+#   podman manifest create docker.io/hironico/nicodrive:7.16.4
 #
 # Build for both amd64 and arm64 and attach to the manifest:
 #   podman build --platform linux/amd64,linux/arm64 \
-#                --manifest docker.io/hironico/nicodrive:7.16.3 \
+#                --manifest docker.io/hironico/nicodrive:7.16.4 \
 #                -f nico.drive.Dockerfile .
 #
 # Publish the manifest:
-#   podman manifest push docker.io/hironico/nicodrive:7.16.3
+#   podman manifest push docker.io/hironico/nicodrive:7.16.4
